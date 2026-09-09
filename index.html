@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>EWO Life Cycle Dashboard</title>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{
@@ -192,6 +192,17 @@ const REDIRECT_URI = window.location.origin + window.location.pathname; // must 
 const SHARE_LINK = "https://epylliongroup-my.sharepoint.com/:x:/p/bp1/IQB4JWfZjthcRpPtb2ty_2jwAUadoAWoVpHmYRc5lMIlMiI";
 const SHEET_NAME = "EWO"; // main data sheet inside the workbook
 /* ============================================================ */
+
+if(typeof msal === "undefined"){
+  document.getElementById("emptyState").innerHTML =
+    `<div class="error" style="display:inline-block;text-align:left;">
+       <strong>Couldn't load the Microsoft sign-in library.</strong><br/>
+       This is almost always an ad-blocker or a browser extension blocking the
+       CDN script — not a bug in the page. Try disabling ad-blockers/extensions
+       for this site, or open it in a private/incognito window, then reload.
+     </div>`;
+  throw new Error("msal-browser failed to load from CDN");
+}
 
 const msalConfig = {
   auth: {
