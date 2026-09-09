@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>EWO Life Cycle Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{
@@ -17,6 +16,7 @@
     --rust:#C7511F;
     --rust-dim:#F7E9E2;
     --amber:#B98900;
+    --amber-dim:#FCF3D9;
   }
   *{box-sizing:border-box;}
   body{
@@ -49,10 +49,12 @@
     gap:8px;
     font-size:12px;
     color:var(--ink-soft);
+    flex-wrap:wrap;
   }
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-soft);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-soft);flex:none;}
   .dot.live{background:var(--teal);}
   .dot.err{background:var(--rust);}
+  .dot.busy{background:var(--amber);}
   button{
     font-family:inherit;
     font-size:13px;
@@ -63,8 +65,7 @@
     cursor:pointer;
     border-radius:2px;
   }
-  button.secondary{background:transparent;color:var(--ink);}
-  button:disabled{opacity:0.5;cursor:default;}
+  button:disabled{opacity:0.4;cursor:default;}
   main{max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
   .panel{
     border:1px solid var(--line);
@@ -92,10 +93,8 @@
   tr:hover td{background:var(--teal-dim);}
   .table-wrap{overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid var(--line);}
   .chart-box{position:relative;height:280px;}
-  .empty{text-align:center;padding:100px 20px;color:var(--ink-soft);}
-  .empty h2{color:var(--ink);margin-bottom:10px;font-size:22px;}
-  .empty p{max-width:460px;margin:0 auto 24px;}
-  .error{background:var(--rust-dim);color:var(--rust);border:1px solid var(--rust);padding:14px 16px;margin-bottom:20px;font-size:13px;}
+  .error{background:var(--rust-dim);color:var(--rust);border:1px solid var(--rust);padding:16px 18px;margin-bottom:20px;font-size:13px;}
+  .error code{background:#fff;padding:1px 5px;border:1px solid var(--rust);}
   .filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
   input[type="text"]{
     font-family:inherit;font-size:13px;padding:8px 10px;
@@ -105,8 +104,16 @@
   .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;}
   .badge.locked{background:var(--teal-dim);color:var(--teal);}
   .badge.hold{background:var(--rust-dim);color:var(--rust);}
-  .badge.tbc{background:#FCF3D9;color:var(--amber);}
+  .badge.tbc{background:var(--amber-dim);color:var(--amber);}
   .badge.cancel{background:#EDEDED;color:var(--ink-soft);}
+  .loading{text-align:center;padding:110px 20px;color:var(--ink-soft);}
+  .loading h2{color:var(--ink);font-size:20px;margin-bottom:8px;}
+  .spinner{
+    width:22px;height:22px;margin:0 auto 22px;
+    border:2px solid var(--line);border-top-color:var(--teal);border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -114,12 +121,11 @@
 <div class="topbar">
   <div>
     <h1>EWO Life Cycle Dashboard</h1>
-    <div class="sub" id="fileLabel">Not connected</div>
+    <div class="sub" id="fileLabel">Connecting to OneDrive</div>
   </div>
   <div class="status">
-    <span class="dot" id="statusDot"></span>
-    <span id="statusText">Not connected</span>
-    <button class="secondary" id="loginBtn">Sign in with Microsoft</button>
+    <span class="dot busy" id="statusDot"></span>
+    <span id="statusText">Loading</span>
     <button id="refreshBtn" disabled>Refresh</button>
   </div>
 </div>
@@ -127,10 +133,10 @@
 <main>
   <div id="errorBox"></div>
 
-  <div id="emptyState" class="empty">
-    <h2>Sign in to see your data</h2>
-    <p>Sign in with your Microsoft account to open the linked EWO workbook. Only accounts that already have access to this file in SharePoint/OneDrive will be able to load it — this respects your existing permissions.</p>
-    <button id="loginBtn2">Sign in with Microsoft</button>
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <h2>Loading the latest data</h2>
+    <p>Reading the EWO workbook from OneDrive.</p>
   </div>
 
   <div id="dashboard" style="display:none;">
@@ -183,223 +189,271 @@
 
 <script>
 /* ============================================================
-   CONFIGURATION — fill CLIENT_ID in from your Azure App Registration
-   ============================================================ */
-const CLIENT_ID = "f52fc87b-2ce5-404d-aab3-acb90675308c";          // Azure Portal -> App registrations -> Overview
-const TENANT_ID = "09438fa4-a67e-4666-a9c2-fcc1c2252472"; // Azure Portal -> App registrations -> Overview -> "Directory (tenant) ID"
-                                                     // or use your domain, e.g. "epylliongroup.onmicrosoft.com"
-const REDIRECT_URI = window.location.origin + window.location.pathname; // must match Azure Redirect URI exactly
+   THE ONLY THING YOU NEED TO EDIT
 
-// The specific OneDrive/SharePoint file this dashboard is locked to.
-const SHARE_LINK = "https://epylliongroup-my.sharepoint.com/:x:/p/bp1/IQB4JWfZjthcRpPtb2ty_2jwAUadoAWoVpHmYRc5lMIlMiI";
-const SHEET_NAME = "EWO"; // main data sheet inside the workbook
+   Paste the URL that Power Automate shows on the trigger
+   "When an HTTP request is received", between the quotes below.
+
+   That flow opens your OneDrive workbook using YOUR Microsoft 365
+   account and hands the rows back to this page. Viewers never sign
+   in and never choose a file. There is no Azure app registration
+   and nothing for an admin to consent to.
+
+   Setup steps for the flow are in README.md.
+   ============================================================ */
+var FLOW_URL = "";
+
+/* Optional settings, sensible defaults already set. */
+var FLOW_METHOD = "POST";        // matches the default flow URL. Use "GET" only
+                                 // if you set the trigger's Method to GET.
+var AUTO_REFRESH_MINUTES = 10;   // re-read the workbook on a timer. 0 turns it off.
+var DATA_URL = "data.json";      // fallback snapshot, used only if FLOW_URL is empty
+var SHEET_MAIN = "EWO";
+var SHEET_FABRIC = "Fsum";
+var SHEET_SEW = "Ssum";
 /* ============================================================ */
 
-if(typeof msal === "undefined"){
-  document.getElementById("emptyState").innerHTML =
-    `<div class="error" style="display:inline-block;text-align:left;">
-       <strong>Couldn't load the Microsoft sign-in library.</strong><br/>
-       This is almost always an ad-blocker or a browser extension blocking the
-       CDN script — not a bug in the page. Try disabling ad-blockers/extensions
-       for this site, or open it in a private/incognito window, then reload.
-     </div>`;
-  throw new Error("msal-browser failed to load from CDN");
+var charts = {};
+var allRows = [];
+var lastLoader = null;
+var refreshTimer = null;
+
+var els = {};
+["refreshBtn","statusDot","statusText","fileLabel","loadingState","dashboard",
+ "statsRow","dataTable","errorBox","searchInput","statusFilter","buyerFilter"
+].forEach(function(id){ els[id] = document.getElementById(id); });
+
+function esc(v){
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-
-const msalConfig = {
-  auth: {
-    clientId: CLIENT_ID,
-    authority: "https://login.microsoftonline.com/" + TENANT_ID,
-    redirectUri: REDIRECT_URI
-  },
-  cache: { cacheLocation: "localStorage" }
-};
-const msalInstance = new msal.PublicClientApplication(msalConfig);
-// Files.Read.All covers files shared with you (not just ones you own) — needed for shared OneDrive links.
-// (Sites.Read.All was removed: this file lives on a personal OneDrive, not a SharePoint team site,
-// and Sites.Read.All is a broad permission that usually forces admin approval unnecessarily.)
-const GRAPH_SCOPES = ["Files.Read", "Files.Read.All"];
-
-let accessToken = null;
-let currentFile = null; // {id, name, driveId}
-let charts = {};
-let allRows = [];
-
-function encodeShareUrl(url){
-  const base64 = btoa(unescape(encodeURIComponent(url)))
-    .replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
-  return "u!" + base64;
-}
-
-const els = {
-  loginBtn: document.getElementById("loginBtn"),
-  loginBtn2: document.getElementById("loginBtn2"),
-  refreshBtn: document.getElementById("refreshBtn"),
-  statusDot: document.getElementById("statusDot"),
-  statusText: document.getElementById("statusText"),
-  fileLabel: document.getElementById("fileLabel"),
-  emptyState: document.getElementById("emptyState"),
-  dashboard: document.getElementById("dashboard"),
-  statsRow: document.getElementById("statsRow"),
-  dataTable: document.getElementById("dataTable"),
-  errorBox: document.getElementById("errorBox"),
-  searchInput: document.getElementById("searchInput"),
-  statusFilter: document.getElementById("statusFilter"),
-  buyerFilter: document.getElementById("buyerFilter")
-};
-
-function showError(msg){ els.errorBox.innerHTML = `<div class="error">${msg}</div>`; }
+function showError(html){ els.errorBox.innerHTML = '<div class="error">' + html + '</div>'; }
 function clearError(){ els.errorBox.innerHTML = ""; }
 function setStatus(text, cls){
   els.statusText.textContent = text;
   els.statusDot.className = "dot" + (cls ? " " + cls : "");
 }
 
-async function login(){
-  clearError();
-  try{
-    const result = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
-    msalInstance.setActiveAccount(result.account);
-    await onSignedIn();
-  }catch(e){
-    showError("Sign-in failed: " + e.message);
-  }
-}
+/* ============================================================
+   Reading the flow response
 
-async function getToken(){
-  const account = msalInstance.getActiveAccount();
-  if(!account) throw new Error("Not signed in");
-  try{
-    const res = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account });
-    return res.accessToken;
-  }catch(e){
-    const res = await msalInstance.acquireTokenPopup({ scopes: GRAPH_SCOPES });
-    return res.accessToken;
-  }
-}
-
-async function onSignedIn(){
-  setStatus("Connected", "live");
-  els.loginBtn.style.display = "none";
-  els.emptyState.style.display = "none";
-  accessToken = await getToken();
-  await load();
-}
-
-async function graphGet(path){
-  const res = await fetch("https://graph.microsoft.com/v1.0" + path, {
-    headers: { Authorization: "Bearer " + accessToken }
+   "List rows present in a table" returns an array of objects. This
+   flattens any such array into the rows-of-arrays shape the rest of
+   the page expects, using the first object's keys as the header row
+   and dropping the connector's own bookkeeping columns.
+   ============================================================ */
+function toMatrix(input){
+  if(!Array.isArray(input) || input.length === 0) return [];
+  if(Array.isArray(input[0])) return input;
+  var keys = Object.keys(input[0]).filter(function(k){
+    return k.charAt(0) !== "@" && k !== "ItemInternalId";
   });
-  if(!res.ok){
-    const body = await res.text();
-    throw new Error(`${res.status} ${res.statusText} - ${body.slice(0,200)}`);
-  }
-  return res.json();
+  return [keys].concat(input.map(function(o){
+    return keys.map(function(k){ return o[k]; });
+  }));
 }
 
-async function load(){
-  clearError();
-  setStatus("Loading...");
+function normaliseBundle(raw){
+  if(Array.isArray(raw)) return { EWO: toMatrix(raw), Fsum: [], Ssum: [] };
+  if(raw && Array.isArray(raw.value)) return { EWO: toMatrix(raw.value), Fsum: [], Ssum: [] };
+  function pick(name){
+    var key = Object.keys(raw || {}).find(function(k){ return k.toLowerCase() === name.toLowerCase(); });
+    if(!key) return [];
+    var v = raw[key];
+    if(v && !Array.isArray(v) && Array.isArray(v.value)) v = v.value;
+    return toMatrix(v);
+  }
+  return { EWO: pick(SHEET_MAIN), Fsum: pick(SHEET_FABRIC), Ssum: pick(SHEET_SEW) };
+}
+
+async function loadFromFlow(){
+  var res;
+  try{
+    res = await fetch(FLOW_URL, {
+      method: FLOW_METHOD,
+      headers: { "Accept": "application/json" }
+    });
+  }catch(e){
+    throw new Error("The browser could not reach the flow. Check that FLOW_URL was pasted "
+      + "in full, including everything after the question mark.");
+  }
+
+  if(res.status === 401 || res.status === 403){
+    throw new Error("The flow rejected the request (" + res.status + "). The signature in "
+      + "FLOW_URL is wrong or incomplete. Copy the whole URL from the trigger again.");
+  }
+  if(res.status === 405){
+    throw new Error("The flow refused this HTTP method. Either set FLOW_METHOD to \"GET\" "
+      + "and set the trigger's Method to GET, or leave both at POST.");
+  }
+  if(res.status === 202){
+    throw new Error("The flow accepted the call but returned no data, which means it has no "
+      + "Response action. Add one and set its body to the rows.");
+  }
+  if(!res.ok){
+    var body = "";
+    try{ body = (await res.text()).slice(0, 200); }catch(e){}
+    throw new Error("The flow answered " + res.status + " " + esc(res.statusText) + ". " + esc(body));
+  }
+
+  var payload;
+  try{
+    payload = await res.json();
+  }catch(e){
+    throw new Error("The flow did not return JSON. Check that the Response action's body is "
+      + "set to the rows and that its Content-Type is application/json.");
+  }
+  return normaliseBundle(payload);
+}
+
+async function loadFromJson(){
+  var res = await fetch(DATA_URL + "?t=" + Date.now(), { cache: "no-store" });
+  if(!res.ok) throw new Error(res.status + " " + res.statusText);
+  return normaliseBundle(await res.json());
+}
+
+/* ============================================================
+   Orchestration
+   ============================================================ */
+async function run(loader, label, opts){
+  opts = opts || {};
+  if(!opts.quiet){ clearError(); setStatus("Loading...", "busy"); }
   els.refreshBtn.disabled = true;
   try{
-    if(!currentFile){
-      const shareToken = encodeShareUrl(SHARE_LINK);
-      const item = await graphGet(`/shares/${shareToken}/driveItem?$select=id,name,parentReference`);
-      currentFile = { id: item.id, name: item.name, driveId: item.parentReference.driveId };
-      els.fileLabel.textContent = currentFile.name;
+    var bundle = await loader();
+    if(!bundle.EWO || bundle.EWO.length === 0){
+      throw new Error("The flow returned no rows. Check that the Excel action points at the "
+        + "right table, and that pagination is switched on so it returns more than 256 rows.");
     }
-
-    const ewoRange = await graphGet(
-      `/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets('${encodeURIComponent(SHEET_NAME)}')/usedRange`
-    );
-    parseEwoSheet(ewoRange.values || []);
-
-    await loadMonthlySheet("Fsum", "fabricChart", "Fabric qty");
-    await loadMonthlySheet("Ssum", "sewChart", "Sewing hours");
-
+    render(bundle);
+    lastLoader = loader;
+    els.fileLabel.textContent = label;
+    els.loadingState.style.display = "none";
     els.dashboard.style.display = "block";
-    els.emptyState.style.display = "none";
-    setStatus("Live — updated " + new Date().toLocaleTimeString(), "live");
+    clearError();
+    setStatus("Updated " + new Date().toLocaleTimeString(), "live");
     els.refreshBtn.disabled = false;
+    startAutoRefresh();
+    return true;
   }catch(e){
-    els.dashboard.style.display = "none";
-    els.emptyState.style.display = "block";
-    showError("Couldn't load the file: " + e.message + ". Make sure your account has access to it and that Sites.Read.All / Files.Read.All consent was granted.");
-    setStatus("Couldn't load", "err");
-    els.refreshBtn.disabled = false;
+    if(opts.quiet){
+      // A failed background refresh must not wipe data that is already on screen.
+      setStatus("Refresh failed, showing older data", "err");
+      els.refreshBtn.disabled = false;
+    }else{
+      els.loadingState.style.display = "none";
+      els.dashboard.style.display = "none";
+      showError("<strong>Couldn't load the data.</strong><br/>" + esc(e.message));
+      setStatus("Not loaded", "err");
+      els.refreshBtn.disabled = !lastLoader;
+    }
+    return false;
   }
 }
 
-async function loadMonthlySheet(sheetName, canvasId, label){
-  destroyChart(canvasId);
-  try{
-    const range = await graphGet(
-      `/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`
-    );
-    const rows = range.values || [];
-    const monthRe = /^[A-Za-z]+\s?\d{2}$/;
-    const seen = new Map();
-    rows.forEach(r => {
-      const m = r[0], v = r[1];
-      if(typeof m === "string" && monthRe.test(m.trim()) && typeof v === "number" && !seen.has(m.trim())){
-        seen.set(m.trim(), v);
-      }
-    });
-    const labels = [...seen.keys()];
-    const values = [...seen.values()];
-    if(labels.length === 0) return;
-    charts[canvasId] = new Chart(document.getElementById(canvasId), {
-      type: "line",
-      data: { labels, datasets: [{ label, data: values, borderColor: "#2B6E5E", backgroundColor: "#E7EFEC", fill: true, tension: 0.25, pointRadius: 3 }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
-          y: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } }
-        }
-      }
-    });
-  }catch(e){ /* optional sheet, skip silently if missing */ }
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  if(!AUTO_REFRESH_MINUTES || !lastLoader) return;
+  refreshTimer = setInterval(function(){
+    run(lastLoader, els.fileLabel.textContent, { quiet: true });
+  }, AUTO_REFRESH_MINUTES * 60000);
 }
 
+function render(bundle){
+  parseEwoSheet(bundle.EWO);
+  renderMonthly(bundle.Fsum, "fabricChart", "Fabric qty");
+  renderMonthly(bundle.Ssum, "sewChart", "Sewing hours");
+}
+
+/* ============================================================
+   Parsing
+   ============================================================ */
 function findHeaderRow(rows, mustContain){
-  for(let i=0;i<Math.min(rows.length,10);i++){
-    const rowVals = (rows[i]||[]).map(v => (v==null?"":String(v)).trim().toLowerCase());
-    if(mustContain.every(m => rowVals.includes(m))) return i;
+  for(var i = 0; i < Math.min(rows.length, 10); i++){
+    var rowVals = (rows[i] || []).map(function(v){
+      return (v == null ? "" : String(v)).trim().toLowerCase();
+    });
+    var ok = mustContain.every(function(m){ return rowVals.indexOf(m) !== -1; });
+    if(ok) return i;
   }
   return -1;
 }
 
 function toNum(v){
-  const n = typeof v === "number" ? v : parseFloat(v);
+  var n = typeof v === "number" ? v : parseFloat(v);
   return isNaN(n) ? 0 : n;
 }
 
+/* Every branch ends at a UTC midnight and prints in UTC, so the calendar day
+   never shifts with the reader's time zone. The Excel connector may hand back
+   a date as a number, as a numeric string, or as ISO text, so all three are
+   handled here. */
+function fmtParts(d){
+  return d.toLocaleDateString(undefined, { timeZone: "UTC" });
+}
+function serialToDate(n){
+  return new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000);
+}
+function fmtDate(v){
+  if(v == null || v === "") return "";
+
+  if(typeof v === "number" && v > 20000 && v < 60000) return fmtParts(serialToDate(v));
+
+  var s = String(v).trim();
+
+  if(/^\d+(\.\d+)?$/.test(s)){
+    var n = parseFloat(s);
+    if(n > 20000 && n < 60000) return fmtParts(serialToDate(n));
+  }
+
+  var iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return fmtParts(new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3])));
+
+  if(v instanceof Date){
+    if(isNaN(v.getTime())) return "";
+    var wall = v.getTime() - v.getTimezoneOffset() * 60000;
+    return fmtParts(new Date(Math.round(wall / 86400000) * 86400000));
+  }
+
+  var d = new Date(s);
+  if(isNaN(d.getTime())) return s;
+  return fmtParts(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())));
+}
+
 function parseEwoSheet(rows){
-  const headerRowIdx = findHeaderRow(rows, ["status", "buyer"]);
-  if(headerRowIdx === -1) throw new Error(`Couldn't find a header row with "Status" and "Buyer" columns in sheet "${SHEET_NAME}".`);
+  var headerRowIdx = findHeaderRow(rows, ["status", "buyer"]);
+  if(headerRowIdx === -1){
+    throw new Error('No header row containing both "Status" and "Buyer" was found. Check that '
+      + 'the Excel table in the flow is the EWO table and that its header row is intact.');
+  }
 
-  const headers = rows[headerRowIdx];
-  const headerMap = {};
-  headers.forEach((h, i) => { if(h) headerMap[String(h).trim().toLowerCase()] = i; });
-  const col = (name) => headerMap[name.toLowerCase()];
-  const idIdx = col("EWO");
+  var headers = rows[headerRowIdx];
+  var headerMap = {};
+  headers.forEach(function(h, i){ if(h) headerMap[String(h).trim().toLowerCase()] = i; });
+  function col(name){ return headerMap[name.toLowerCase()]; }
 
-  const dataRows = rows.slice(headerRowIdx + 1).filter(r => idIdx != null && r[idIdx] != null && r[idIdx] !== "");
+  var idIdx = col("EWO");
+  if(idIdx == null) throw new Error('A header row was found, but it has no "EWO" column.');
 
-  allRows = dataRows.map(r => ({
-    ewo: r[col("EWO")],
-    status: r[col("Status")] ?? "Unknown",
-    note: col("Latest note") != null ? r[col("Latest note")] : "",
-    team: col("Team") != null ? (r[col("Team")] ?? "Unknown") : "Unknown",
-    buyer: col("Buyer") != null ? (r[col("Buyer")] ?? "Unknown") : "Unknown",
-    dept: col("Dept") != null ? r[col("Dept")] : "",
-    execUnit: col("Execution Unit") != null ? (r[col("Execution Unit")] ?? "Unknown") : "Unknown",
-    orderQty: toNum(r[col("Order Qty")]),
-    fabQty: toNum(r[col("Fab Qty")]),
-    orderBankDate: col("Order Bank Date") != null ? r[col("Order Bank Date")] : null
-  }));
+  var dataRows = rows.slice(headerRowIdx + 1).filter(function(r){
+    return r && r[idIdx] != null && r[idIdx] !== "";
+  });
+
+  allRows = dataRows.map(function(r){
+    return {
+      ewo: r[col("EWO")],
+      status: r[col("Status")] == null ? "Unknown" : r[col("Status")],
+      note: col("Latest note") != null ? r[col("Latest note")] : "",
+      team: col("Team") != null && r[col("Team")] != null ? r[col("Team")] : "Unknown",
+      buyer: col("Buyer") != null && r[col("Buyer")] != null ? r[col("Buyer")] : "Unknown",
+      dept: col("Dept") != null ? r[col("Dept")] : "",
+      execUnit: col("Execution Unit") != null && r[col("Execution Unit")] != null ? r[col("Execution Unit")] : "Unknown",
+      orderQty: toNum(r[col("Order Qty")]),
+      fabQty: toNum(r[col("Fab Qty")]),
+      orderBankDate: col("Order Bank Date") != null ? r[col("Order Bank Date")] : null
+    };
+  });
 
   renderStats();
   renderBreakdown("status", "statusChart", "Status");
@@ -410,15 +464,19 @@ function parseEwoSheet(rows){
   populateFilters();
 }
 
+/* ============================================================
+   Rendering
+   ============================================================ */
 function renderStats(){
   els.statsRow.innerHTML = "";
-  const totalOrders = allRows.length;
-  const totalOrderQty = allRows.reduce((s,r) => s + r.orderQty, 0);
-  const totalFabQty = allRows.reduce((s,r) => s + r.fabQty, 0);
-  const distinctBuyers = new Set(allRows.map(r => r.buyer)).size;
-  const locked = allRows.filter(r => String(r.status).toLowerCase().startsWith("locked")).length;
+  var totalOrderQty = allRows.reduce(function(s, r){ return s + r.orderQty; }, 0);
+  var totalFabQty = allRows.reduce(function(s, r){ return s + r.fabQty; }, 0);
+  var distinctBuyers = new Set(allRows.map(function(r){ return r.buyer; })).size;
+  var locked = allRows.filter(function(r){
+    return String(r.status).toLowerCase().indexOf("locked") === 0;
+  }).length;
 
-  addStat("Total EWOs", totalOrders.toLocaleString());
+  addStat("Total EWOs", allRows.length.toLocaleString());
   addStat("Locked", locked.toLocaleString());
   addStat("Total Order Qty", Math.round(totalOrderQty).toLocaleString());
   addStat("Total Fab Qty", Math.round(totalFabQty).toLocaleString());
@@ -426,106 +484,154 @@ function renderStats(){
 }
 
 function addStat(label, value){
-  const div = document.createElement("div");
+  var div = document.createElement("div");
   div.className = "stat";
-  div.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+  div.innerHTML = '<div class="label">' + esc(label) + '</div><div class="value">' + esc(value) + '</div>';
   els.statsRow.appendChild(div);
 }
 
 function countBy(field){
-  const map = {};
-  allRows.forEach(r => {
-    const key = String(r[field] ?? "Unknown").trim() || "Unknown";
-    map[key] = (map[key]||0) + 1;
+  var map = {};
+  allRows.forEach(function(r){
+    var key = String(r[field] == null ? "Unknown" : r[field]).trim() || "Unknown";
+    map[key] = (map[key] || 0) + 1;
   });
-  return Object.entries(map).sort((a,b) => b[1]-a[1]);
+  return Object.keys(map).map(function(k){ return [k, map[k]]; })
+    .sort(function(a, b){ return b[1] - a[1]; });
 }
 
-function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+function destroyChart(id){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+}
+
+var MONO = { family: "IBM Plex Mono", size: 11 };
 
 function renderBreakdown(field, canvasId, label){
-  const entries = countBy(field);
-  const palette = ["#2B6E5E","#C7511F","#B98900","#6B7280","#8FA6D6","#A85CC1","#4E9E7E","#D98E3B"];
+  var entries = countBy(field);
+  var palette = ["#2B6E5E", "#C7511F", "#B98900", "#6B7280", "#8FA6D6", "#A85CC1", "#4E9E7E", "#D98E3B"];
   destroyChart(canvasId);
   charts[canvasId] = new Chart(document.getElementById(canvasId), {
     type: "bar",
-    data: { labels: entries.map(e => e[0]), datasets: [{ label, data: entries.map(e => e[1]), backgroundColor: entries.map((_,i) => palette[i % palette.length]) }] },
+    data: {
+      labels: entries.map(function(e){ return e[0]; }),
+      datasets: [{
+        label: label,
+        data: entries.map(function(e){ return e[1]; }),
+        backgroundColor: entries.map(function(_, i){ return palette[i % palette.length]; })
+      }]
+    },
     options: {
       indexAxis: "y", responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
-        y: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } }
-      }
+      scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: MONO } } }
     }
   });
 }
 
 function renderTopBuyers(){
-  const entries = countBy("buyer").slice(0, 12);
+  var entries = countBy("buyer").slice(0, 12);
   destroyChart("buyerChart");
   charts.buyerChart = new Chart(document.getElementById("buyerChart"), {
     type: "bar",
-    data: { labels: entries.map(e => e[0]), datasets: [{ label: "Orders", data: entries.map(e => e[1]), backgroundColor: "#2B6E5E" }] },
+    data: {
+      labels: entries.map(function(e){ return e[0]; }),
+      datasets: [{ label: "Orders", data: entries.map(function(e){ return e[1]; }), backgroundColor: "#2B6E5E" }]
+    },
     options: {
       indexAxis: "y", responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
-        y: { ticks: { font: { family: "IBM Plex Mono", size: 10 } } }
-      }
+      scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: { family: "IBM Plex Mono", size: 10 } } } }
+    }
+  });
+}
+
+function renderMonthly(rows, canvasId, label){
+  destroyChart(canvasId);
+  if(!rows || rows.length === 0) return;
+  var monthRe = /^[A-Za-z]+\s?\d{2}$/;
+  var seen = new Map();
+  rows.forEach(function(r){
+    if(!r) return;
+    var m = r[0], v = r[1];
+    if(typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim())) v = parseFloat(v);
+    if(typeof m === "string" && monthRe.test(m.trim()) && typeof v === "number" && !seen.has(m.trim())){
+      seen.set(m.trim(), v);
+    }
+  });
+  if(seen.size === 0) return;
+  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: "line",
+    data: {
+      labels: Array.from(seen.keys()),
+      datasets: [{
+        label: label,
+        data: Array.from(seen.values()),
+        borderColor: "#2B6E5E", backgroundColor: "#E7EFEC",
+        fill: true, tension: 0.25, pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: MONO } } }
     }
   });
 }
 
 function statusBadge(status){
-  const s = String(status).toLowerCase();
-  let cls = "";
-  if(s.startsWith("locked")) cls = "locked";
-  else if(s.includes("hold") || s.includes("block")) cls = "hold";
-  else if(s.includes("tbc") || s.includes("later") || s.includes("pending")) cls = "tbc";
-  else if(s.includes("cancel")) cls = "cancel";
-  return `<span class="badge ${cls}">${status}</span>`;
+  var s = String(status).toLowerCase();
+  var cls = "";
+  if(s.indexOf("locked") === 0) cls = "locked";
+  else if(s.indexOf("hold") !== -1 || s.indexOf("block") !== -1) cls = "hold";
+  else if(s.indexOf("tbc") !== -1 || s.indexOf("later") !== -1 || s.indexOf("pending") !== -1) cls = "tbc";
+  else if(s.indexOf("cancel") !== -1) cls = "cancel";
+  return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
 }
 
 function renderTable(rows){
-  const table = els.dataTable;
+  var table = els.dataTable;
   table.innerHTML = "";
-  const thead = document.createElement("thead");
-  thead.innerHTML = `<tr>
-    <th>EWO</th><th>Status</th><th>Buyer</th><th>Team</th><th>Execution Unit</th>
-    <th>Order Qty</th><th>Fab Qty</th><th>Order Bank Date</th><th>Note</th>
-  </tr>`;
+  var thead = document.createElement("thead");
+  thead.innerHTML = "<tr><th>EWO</th><th>Status</th><th>Buyer</th><th>Team</th><th>Execution Unit</th>"
+    + "<th>Order Qty</th><th>Fab Qty</th><th>Order Bank Date</th><th>Note</th></tr>";
   table.appendChild(thead);
-  const tbody = document.createElement("tbody");
-  rows.slice(0, 300).forEach(r => {
-    const tr = document.createElement("tr");
-    const date = r.orderBankDate instanceof Date ? r.orderBankDate.toLocaleDateString() : (r.orderBankDate ?? "");
-    tr.innerHTML = `<td>${r.ewo}</td><td>${statusBadge(r.status)}</td><td>${r.buyer}</td><td>${r.team}</td>
-      <td>${r.execUnit}</td><td>${Math.round(r.orderQty).toLocaleString()}</td><td>${Math.round(r.fabQty).toLocaleString()}</td>
-      <td>${date}</td><td>${r.note ?? ""}</td>`;
+  var tbody = document.createElement("tbody");
+  rows.slice(0, 300).forEach(function(r){
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + esc(r.ewo) + "</td>"
+      + "<td>" + statusBadge(r.status) + "</td>"
+      + "<td>" + esc(r.buyer) + "</td>"
+      + "<td>" + esc(r.team) + "</td>"
+      + "<td>" + esc(r.execUnit) + "</td>"
+      + "<td>" + esc(Math.round(r.orderQty).toLocaleString()) + "</td>"
+      + "<td>" + esc(Math.round(r.fabQty).toLocaleString()) + "</td>"
+      + "<td>" + esc(fmtDate(r.orderBankDate)) + "</td>"
+      + "<td>" + esc(r.note) + "</td>";
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
 }
 
 function populateFilters(){
-  const statuses = [...new Set(allRows.map(r => r.status))].sort();
-  const buyers = [...new Set(allRows.map(r => r.buyer))].sort();
-  els.statusFilter.innerHTML = `<option value="">All statuses</option>` + statuses.map(s => `<option value="${s}">${s}</option>`).join("");
-  els.buyerFilter.innerHTML = `<option value="">All buyers</option>` + buyers.map(b => `<option value="${b}">${b}</option>`).join("");
+  var statuses = Array.from(new Set(allRows.map(function(r){ return String(r.status); }))).sort();
+  var buyers = Array.from(new Set(allRows.map(function(r){ return String(r.buyer); }))).sort();
+  function opts(list){
+    return list.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join("");
+  }
+  els.statusFilter.innerHTML = '<option value="">All statuses</option>' + opts(statuses);
+  els.buyerFilter.innerHTML = '<option value="">All buyers</option>' + opts(buyers);
 }
 
 function applyFilters(){
-  const q = els.searchInput.value.trim().toLowerCase();
-  const statusF = els.statusFilter.value;
-  const buyerF = els.buyerFilter.value;
-  const filtered = allRows.filter(r => {
-    if(statusF && r.status !== statusF) return false;
-    if(buyerF && r.buyer !== buyerF) return false;
+  var q = els.searchInput.value.trim().toLowerCase();
+  var statusF = els.statusFilter.value;
+  var buyerF = els.buyerFilter.value;
+  var filtered = allRows.filter(function(r){
+    if(statusF && String(r.status) !== statusF) return false;
+    if(buyerF && String(r.buyer) !== buyerF) return false;
     if(q){
-      const hay = `${r.ewo} ${r.status} ${r.buyer} ${r.team} ${r.execUnit} ${r.note}`.toLowerCase();
-      if(!hay.includes(q)) return false;
+      var hay = (r.ewo + " " + r.status + " " + r.buyer + " " + r.team + " " + r.execUnit + " " + r.note).toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
     }
     return true;
   });
@@ -535,24 +641,36 @@ function applyFilters(){
 els.searchInput.addEventListener("input", applyFilters);
 els.statusFilter.addEventListener("change", applyFilters);
 els.buyerFilter.addEventListener("change", applyFilters);
-els.loginBtn.addEventListener("click", login);
-els.loginBtn2.addEventListener("click", login);
-els.refreshBtn.addEventListener("click", async () => {
-  accessToken = await getToken();
-  await load();
+els.refreshBtn.addEventListener("click", function(){
+  if(lastLoader) run(lastLoader, els.fileLabel.textContent);
 });
 
-// try silent sign-in on load
-(async () => {
-  await msalInstance.handleRedirectPromise();
-  const account = msalInstance.getAllAccounts()[0];
-  if(account){
-    msalInstance.setActiveAccount(account);
-    try{
-      accessToken = await getToken();
-      await onSignedIn();
-    }catch(e){ /* needs interactive login */ }
+/* ============================================================
+   Startup
+   ============================================================ */
+(async function(){
+  if(FLOW_URL){
+    els.fileLabel.textContent = "Live from OneDrive";
+    await run(loadFromFlow, "Live from OneDrive");
+    return;
   }
+
+  if(DATA_URL){
+    try{
+      var bundle = await loadFromJson();
+      await run(function(){ return Promise.resolve(bundle); }, "Snapshot: " + DATA_URL);
+      return;
+    }catch(e){ /* no snapshot, fall through to the setup message */ }
+  }
+
+  els.loadingState.style.display = "none";
+  els.fileLabel.textContent = "Not configured";
+  setStatus("Not configured", "err");
+  showError("<strong>This dashboard has not been connected yet.</strong><br/><br/>"
+    + "Open <code>index.html</code>, find <code>var FLOW_URL = \"\";</code> near the top of the "
+    + "script, and paste in the URL from your Power Automate trigger. Commit and push, and the "
+    + "page will load the workbook by itself for everyone who opens it.<br/><br/>"
+    + "The steps for building that flow are in README.md.");
 })();
 </script>
 </body>
