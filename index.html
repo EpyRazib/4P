@@ -186,6 +186,8 @@
    CONFIGURATION — fill CLIENT_ID in from your Azure App Registration
    ============================================================ */
 const CLIENT_ID = "f52fc87b-2ce5-404d-aab3-acb90675308c";          // Azure Portal -> App registrations -> Overview
+const TENANT_ID = "09438fa4-a67e-4666-a9c2-fcc1c2252472"; // Azure Portal -> App registrations -> Overview -> "Directory (tenant) ID"
+                                                     // or use your domain, e.g. "epylliongroup.onmicrosoft.com"
 const REDIRECT_URI = window.location.origin + window.location.pathname; // must match Azure Redirect URI exactly
 
 // The specific OneDrive/SharePoint file this dashboard is locked to.
@@ -207,7 +209,7 @@ if(typeof msal === "undefined"){
 const msalConfig = {
   auth: {
     clientId: CLIENT_ID,
-    authority: "https://login.microsoftonline.com/common",
+    authority: "https://login.microsoftonline.com/" + TENANT_ID,
     redirectUri: REDIRECT_URI
   },
   cache: { cacheLocation: "localStorage" }
