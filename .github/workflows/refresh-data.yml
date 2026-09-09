@@ -1,0 +1,72 @@
+name: Refresh EWO data
+
+# Downloads the workbook from the OneDrive sharing link, rebuilds data.json,
+# and commits it when the numbers have actually changed. GitHub Pages then
+# serves the fresh file to everyone with no action from anybody.
+#
+# Before this runs you must add the sharing link as a repository secret:
+#   Settings -> Secrets and variables -> Actions -> New repository secret
+#   Name:   ONEDRIVE_SHARE_URL
+#   Value:  the "Anyone with the link" address for the workbook
+#
+# Keeping it in a secret rather than in the workflow file means the link does
+# not sit in public source, so nobody can grab the whole workbook from it.
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub queues cron jobs, so expect a few minutes' drift.
+    - cron: "*/30 * * * *"
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+  push:
+    paths:
+      - "export_ewo_data.py"
+      - ".github/workflows/refresh-data.yml"
+
+permissions:
+  contents: write           # needed to commit data.json back to the branch
+
+concurrency:
+  group: refresh-ewo-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install openpyxl
+        run: python -m pip install --quiet --upgrade openpyxl
+
+      - name: Confirm the sharing link secret exists
+        env:
+          SHARE_URL: ${{ secrets.ONEDRIVE_SHARE_URL }}
+        run: |
+          if [ -z "$SHARE_URL" ]; then
+            echo "::error::The ONEDRIVE_SHARE_URL secret is not set."
+            echo "Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Build data.json from the workbook
+        env:
+          SHARE_URL: ${{ secrets.ONEDRIVE_SHARE_URL }}
+        run: python export_ewo_data.py "$SHARE_URL" -o data.json
+
+      - name: Commit it only if something changed
+        run: |
+          if git diff --quiet -- data.json; then
+            echo "No change in the data, nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "Refresh EWO data $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
