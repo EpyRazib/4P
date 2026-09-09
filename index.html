@@ -205,7 +205,6 @@
     <div class="rule"></div>
     <div>
       <h1>EWO Life Cycle Dashboard</h1>
-      <div class="sub" id="fileLabel">Loading</div>
     </div>
   </div>
   <div class="status">
@@ -213,7 +212,8 @@
     <span id="statusText">Loading</span>
     <span id="freshness"></span>
     <button class="secondary tiny" id="csvBtn">Export CSV</button>
-    <button class="tiny" id="refreshBtn" disabled>Refresh now</button>
+    <button class="secondary tiny" id="rebuildBtn" hidden>Rebuild from OneDrive</button>
+    <button class="tiny" id="refreshBtn" disabled>Refresh</button>
   </div>
 </div>
 
@@ -412,6 +412,20 @@
    ============================================================ */
 var DATA_URL = "data.json";
 var POLL_SECONDS = 120;          // how often to check whether the data changed
+
+/* Pulling a fresh copy out of OneDrive is the GitHub Action's job. A static
+   page cannot start it on its own, because doing so needs a GitHub token and
+   anything in this file is readable by anyone who opens it.
+
+   REBUILD_API is the way round that: a tiny Cloudflare Worker that keeps the
+   token server-side and does nothing else. Set it and the button runs the whole
+   rebuild in place, with no new tab and nothing to click on GitHub. The worker
+   code and its setup steps are in rebuild-worker.js.
+
+   Leave REBUILD_API empty and the button falls back to opening the Action page
+   at REBUILD_URL. Empty both and the button disappears. */
+var REBUILD_API = "";
+var REBUILD_URL = "https://github.com/EpyRazib/4P/actions/workflows/refresh-data.yml";
 var FLOW_URL = "";
 var FLOW_METHOD = "POST";
 var SHEET_MAIN = "EWO", SHEET_FABRIC = "Fsum", SHEET_SEW = "Ssum";
@@ -434,10 +448,13 @@ var sortCol = null, sortDir = 1;
 var pivotSort = "Order Qty", pivotDir = -1;
 var page = 0;
 var generatedAt = null, lastSignature = null;
+/* While a rebuild is running it owns the status line, so the ordinary data
+   checks it makes along the way must not overwrite the progress message. */
+var rebuilding = false;
 var pollTimer = null, freshTimer = null, sourceLabel = "";
 
 var els = {};
-["fileLabel","statusDot","statusText","freshness","refreshBtn","csvBtn","loadingState","dashboard",
+["statusDot","statusText","freshness","refreshBtn","rebuildBtn","csvBtn","loadingState","dashboard",
  "errorBox","filterGrid","searchInput","dateField","dateFieldWrap","dateFrom","dateTo","resetBtn",
  "yearFilter","monthFilter","granSwitch","granHint",
  "filterSummary","activeChips","kpiRow","alertRow","attnTable","attnTableTitle","attnTableHint",
@@ -555,18 +572,20 @@ function signatureOf(bundle){
 
 async function load(opts){
   opts = opts || {};
-  if(!opts.quiet){ clearError(); setStatus("Loading...", "busy"); }
+  if(!opts.quiet && !rebuilding){ clearError(); setStatus("Loading...", "busy"); }
   els.refreshBtn.disabled = true;
   try{
     var bundle = await fetchData();
     if(!bundle.EWO || bundle.EWO.length < 2) throw new Error("The data file contained no orders.");
 
     var sig = signatureOf(bundle);
-    if(opts.quiet && sig === lastSignature){
-      setStatus("Up to date", "live");
+    if(sig === lastSignature && lastSignature !== null){
+      // Nothing new has been published. Say so plainly, so a manual click never
+      // looks like it did nothing at all.
+      if(!rebuilding) setStatus(opts.quiet ? "Up to date" : "Checked, no new data yet", "live");
       paintFreshness();
       els.refreshBtn.disabled = false;
-      return true;                       // nothing changed, leave the screen alone
+      return true;
     }
     var isUpdate = (lastSignature !== null);
     lastSignature = sig;
@@ -574,12 +593,10 @@ async function load(opts){
 
     ingest(bundle);
     sourceLabel = FLOW_URL ? "Live via Power Automate" : "OneDrive workbook";
-    els.fileLabel.textContent = sourceLabel + "  ·  " + ROWS.length.toLocaleString()
-      + " orders  ·  " + HEADERS.length + " columns";
     els.loadingState.style.display = "none";
     els.dashboard.style.display = "block";
     clearError();
-    setStatus(isUpdate ? "New data loaded" : "Up to date", "live");
+    if(!rebuilding) setStatus(isUpdate ? "New data loaded" : "Up to date", "live");
     paintFreshness();
     if(isUpdate){
       els.dashboard.classList.remove("flash");
@@ -590,7 +607,7 @@ async function load(opts){
     return true;
   }catch(e){
     if(opts.quiet){
-      setStatus("Check failed, showing last good data", "err");
+      if(!rebuilding) setStatus("Check failed, showing last good data", "err");
       els.refreshBtn.disabled = false;
     }else{
       els.loadingState.style.display = "none";
@@ -1453,6 +1470,114 @@ els.prevPage.addEventListener("click", function(){ page--; renderTable(); });
 els.nextPage.addEventListener("click", function(){ page++; renderTable(); });
 els.csvBtn.addEventListener("click", exportCsv);
 els.refreshBtn.addEventListener("click", function(){ load(); });
+
+/* After the Action is started, the new file takes a couple of minutes to build
+   and for Pages to republish it. Rather than making the reader keep pressing
+   Refresh, watch closely for a while and pick it up the moment it lands. */
+var watchTimer = null, watchUntil = 0;
+function watchForRebuild(){
+  if(watchTimer) clearInterval(watchTimer);
+  watchUntil = Date.now() + 10 * 60000;
+  setStatus("Waiting for the rebuild...", "busy");
+  watchTimer = setInterval(async function(){
+    if(Date.now() > watchUntil){
+      clearInterval(watchTimer); watchTimer = null;
+      if(els.statusText.textContent.indexOf("Waiting") === 0){
+        setStatus("Rebuild not seen yet, still on the last data", "err");
+      }
+      return;
+    }
+    var before = lastSignature;
+    await load({ quiet: true });
+    if(lastSignature !== before){
+      clearInterval(watchTimer); watchTimer = null;
+      setStatus("New data loaded", "live");
+    }else{
+      var left = Math.max(0, Math.round((watchUntil - Date.now()) / 60000));
+      setStatus("Waiting for the rebuild, " + left + " min left", "busy");
+    }
+  }, 20000);
+}
+
+/* One button, the whole job: ask the worker to start the Action, follow the run
+   to completion, then wait for the rebuilt file to appear. */
+async function rebuildInPlace(){
+  els.rebuildBtn.disabled = true;
+  rebuilding = true;
+  var startSig = lastSignature;
+  try{
+    setStatus("Starting the rebuild...", "busy");
+    var res = await fetch(REBUILD_API, { method: "POST" });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !body.started){
+      throw new Error(body.error || ("The rebuild service answered " + res.status + "."));
+    }
+  }catch(e){
+    rebuilding = false;
+    setStatus("Rebuild could not start", "err");
+    showError("<strong>The rebuild did not start.</strong><br/>" + esc(e.message)
+      + "<br/><br/>The dashboard itself is fine and is still showing the last published data.");
+    els.rebuildBtn.disabled = false;
+    return;
+  }
+
+  clearError();
+  var deadline = Date.now() + 12 * 60000;
+  var sawRunning = false;
+
+  while(Date.now() < deadline){
+    await new Promise(function(r){ setTimeout(r, 8000); });
+
+    var run = null;
+    try{
+      var st = await fetch(REBUILD_API, { cache: "no-store" });
+      if(st.ok) run = await st.json();
+    }catch(e){ /* a single failed check is not worth reporting */ }
+
+    if(run && run.state === "queued") setStatus("Rebuild queued at GitHub...", "busy");
+    else if(run && run.state === "in_progress"){ sawRunning = true; setStatus("Reading the OneDrive file...", "busy"); }
+    else if(run && run.state === "completed" && run.conclusion && run.conclusion !== "success"){
+      rebuilding = false;
+      setStatus("Rebuild failed", "err");
+      showError("<strong>The rebuild ran but did not finish successfully (" + esc(run.conclusion) + ").</strong>"
+        + (run.url ? ' <a href="' + esc(run.url) + '" target="_blank" rel="noopener">Open the run log</a>.' : "")
+        + "<br/>The dashboard is still showing the last good data.");
+      els.rebuildBtn.disabled = false;
+      return;
+    }
+    else if(run && run.state === "completed") setStatus("Publishing the new data...", "busy");
+
+    // The run finishing is not the end: Pages has to republish the file.
+    if(!run || run.state === "completed" || sawRunning){
+      await load({ quiet: true });
+      if(lastSignature !== startSig){
+        rebuilding = false;
+        setStatus("New data loaded", "live");
+        els.rebuildBtn.disabled = false;
+        return;
+      }
+    }
+  }
+
+  rebuilding = false;
+  setStatus("Rebuild is taking longer than expected", "err");
+  els.rebuildBtn.disabled = false;
+}
+
+if(REBUILD_API || REBUILD_URL){
+  els.rebuildBtn.hidden = false;
+  if(REBUILD_API){
+    els.rebuildBtn.title = "Reads the OneDrive workbook again and updates this page. Takes a couple of minutes.";
+    els.rebuildBtn.addEventListener("click", rebuildInPlace);
+  }else{
+    els.rebuildBtn.title = "Opens the GitHub Action that reads the OneDrive file. "
+      + "Press Run workflow there, then come back; this page picks up the result on its own.";
+    els.rebuildBtn.addEventListener("click", function(){
+      window.open(REBUILD_URL, "_blank", "noopener");
+      watchForRebuild();
+    });
+  }
+}
 window.addEventListener("resize", function(){
   clearTimeout(window.__rs);
   window.__rs = setTimeout(function(){ renderTab(activeTab); }, 250);
@@ -1465,7 +1590,6 @@ window.addEventListener("resize", function(){
   var ok = await load();
   if(ok){ startPolling(); return; }
   if(!FLOW_URL){
-    els.fileLabel.textContent = "No data published yet";
     showError("<strong>The data file has not been published yet.</strong><br/><br/>"
       + "This page reads <code>data.json</code>, which the GitHub Action builds from your OneDrive "
       + "workbook. Open the <strong>Actions</strong> tab and run <strong>Refresh EWO data</strong> once, "
