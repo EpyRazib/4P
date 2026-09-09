@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ledger — OneDrive Data Dashboard</title>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#FAFAF8;
+    --ink:#1C1F22;
+    --ink-soft:#6B7280;
+    --line:#E3E1D9;
+    --teal:#2B6E5E;
+    --teal-dim:#E7EFEC;
+    --rust:#C7511F;
+    --rust-dim:#F7E9E2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+    font-size:14px;
+    line-height:1.5;
+  }
+  h1,h2,h3{
+    font-family:Georgia,"Source Serif 4",serif;
+    font-weight:600;
+    margin:0;
+  }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 28px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+  }
+  .topbar h1{font-size:20px;letter-spacing:-0.01em;}
+  .topbar .sub{color:var(--ink-soft);font-size:12px;margin-top:2px;}
+  .status{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-soft);}
+  .dot.live{background:var(--teal);}
+  button{
+    font-family:inherit;
+    font-size:13px;
+    padding:9px 16px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+    border-radius:2px;
+  }
+  button.secondary{
+    background:transparent;
+    color:var(--ink);
+  }
+  button:disabled{opacity:0.4;cursor:default;}
+  main{max-width:1100px;margin:0 auto;padding:32px 28px 80px;}
+  .panel{
+    border:1px solid var(--line);
+    padding:24px;
+    margin-bottom:20px;
+    background:#fff;
+  }
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  select{
+    font-family:inherit;
+    font-size:13px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .grid-stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:20px;
+  }
+  .stat{
+    background:#fff;
+    padding:18px 20px;
+  }
+  .stat .label{color:var(--ink-soft);font-size:11px;margin-bottom:6px;}
+  .stat .value{font-family:Georgia,serif;font-size:26px;color:var(--teal);}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  th,td{
+    text-align:left;
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  th{
+    color:var(--ink-soft);
+    font-weight:normal;
+    border-bottom:1px solid var(--ink);
+  }
+  tr:hover td{background:var(--teal-dim);}
+  .table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;}
+  .empty{
+    text-align:center;
+    padding:80px 20px;
+    color:var(--ink-soft);
+  }
+  .empty h2{color:var(--ink);margin-bottom:10px;font-size:22px;}
+  .empty p{max-width:420px;margin:0 auto 24px;}
+  .error{
+    background:var(--rust-dim);
+    color:var(--rust);
+    border:1px solid var(--rust);
+    padding:12px 16px;
+    margin-bottom:20px;
+    font-size:13px;
+  }
+  .chart-box{position:relative;height:320px;}
+  .file-item{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .file-item:hover{background:var(--teal-dim);}
+  .file-item .name{font-family:Georgia,serif;font-size:15px;}
+  .file-item .meta{color:var(--ink-soft);font-size:11px;}
+  label{font-size:12px;color:var(--ink-soft);}
+  .field{display:flex;flex-direction:column;gap:4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Ledger</h1>
+    <div class="sub" id="fileLabel">No file selected</div>
+  </div>
+  <div class="row">
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Not connected</span></div>
+    <button class="secondary" id="loginBtn">Connect OneDrive</button>
+    <button id="refreshBtn" disabled>Refresh</button>
+  </div>
+</div>
+
+<main>
+  <div id="errorBox"></div>
+
+  <div id="emptyState" class="empty">
+    <h2>Connect to see your data</h2>
+    <p>Sign in with your Microsoft account to open the linked Excel file and build a dashboard from it.</p>
+    <button id="loginBtn2">Connect OneDrive</button>
+  </div>
+
+  <div id="pickerPanel" class="panel" style="display:none;">
+    <h3 style="margin-bottom:12px;">Select a file</h3>
+    <div id="fileList"></div>
+  </div>
+
+  <div id="sheetPanel" class="panel" style="display:none;">
+    <div class="row" style="justify-content:space-between;">
+      <div class="field">
+        <label>Worksheet</label>
+        <select id="sheetSelect"></select>
+      </div>
+      <button class="secondary" id="changeFileBtn">Change file</button>
+    </div>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="grid-stats" id="statsRow"></div>
+    <div class="panel">
+      <h3 style="margin-bottom:16px;">Overview</h3>
+      <div class="chart-box"><canvas id="mainChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:16px;">Raw data</h3>
+      <div class="table-wrap"><table id="dataTable"></table></div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============================================================
+   CONFIGURATION — fill these in from your Azure App Registration
+   ============================================================ */
+const CLIENT_ID = "f52fc87b-2ce5-404d-aab3-acb90675308c";          // from Azure Portal -> App registrations -> Overview
+const REDIRECT_URI = window.location.origin + window.location.pathname; // must match Azure Redirect URI exactly
+
+// The specific OneDrive/SharePoint file this dashboard is locked to.
+// Paste any file's sharing link here to point the dashboard at a different file.
+const SHARE_LINK = "https://epylliongroup-my.sharepoint.com/:x:/p/bp1/IQB4JWfZjthcRpPtb2ty_2jwAUadoAWoVpHmYRc5lMIlMiI";
+
+/* ============================================================ */
+
+const msalConfig = {
+  auth: {
+    clientId: CLIENT_ID,
+    authority: "https://login.microsoftonline.com/common",
+    redirectUri: REDIRECT_URI
+  },
+  cache: { cacheLocation: "localStorage" }
+};
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+// Files.Read.All covers files shared with you (not just ones you own) — needed for SharePoint/OneDrive links like this one.
+const GRAPH_SCOPES = ["Files.Read", "Files.Read.All", "Sites.Read.All"];
+
+let accessToken = null;
+let currentFile = null;   // {id, name, driveId}
+let currentSheet = null;
+let chartInstance = null;
+
+// Encodes a sharing URL into the Graph API's "shares" token format.
+// See: https://learn.microsoft.com/graph/api/shares-get
+function encodeShareUrl(url){
+  const base64 = btoa(unescape(encodeURIComponent(url)))
+    .replace(/=/g, "")
+    .replace(/\//g, "_")
+    .replace(/\+/g, "-");
+  return "u!" + base64;
+}
+
+const els = {
+  loginBtn: document.getElementById("loginBtn"),
+  loginBtn2: document.getElementById("loginBtn2"),
+  refreshBtn: document.getElementById("refreshBtn"),
+  statusDot: document.getElementById("statusDot"),
+  statusText: document.getElementById("statusText"),
+  fileLabel: document.getElementById("fileLabel"),
+  emptyState: document.getElementById("emptyState"),
+  pickerPanel: document.getElementById("pickerPanel"),
+  fileList: document.getElementById("fileList"),
+  sheetPanel: document.getElementById("sheetPanel"),
+  sheetSelect: document.getElementById("sheetSelect"),
+  changeFileBtn: document.getElementById("changeFileBtn"),
+  dashboard: document.getElementById("dashboard"),
+  statsRow: document.getElementById("statsRow"),
+  dataTable: document.getElementById("dataTable"),
+  errorBox: document.getElementById("errorBox")
+};
+
+function showError(msg){
+  els.errorBox.innerHTML = `<div class="error">${msg}</div>`;
+}
+function clearError(){ els.errorBox.innerHTML = ""; }
+
+async function login(){
+  clearError();
+  try{
+    const result = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
+    msalInstance.setActiveAccount(result.account);
+    await onSignedIn();
+  }catch(e){
+    showError("Sign-in failed: " + e.message);
+  }
+}
+
+async function getToken(){
+  const account = msalInstance.getActiveAccount();
+  if(!account) throw new Error("Not signed in");
+  try{
+    const res = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account });
+    return res.accessToken;
+  }catch(e){
+    const res = await msalInstance.acquireTokenPopup({ scopes: GRAPH_SCOPES });
+    return res.accessToken;
+  }
+}
+
+async function onSignedIn(){
+  els.statusDot.classList.add("live");
+  els.statusText.textContent = "Connected";
+  els.loginBtn.style.display = "none";
+  els.emptyState.style.display = "none";
+  accessToken = await getToken();
+  await loadPinnedFile();
+}
+
+// Resolves SHARE_LINK to a real driveId/itemId, then loads its worksheets.
+async function loadPinnedFile(){
+  clearError();
+  els.pickerPanel.style.display = "none";
+  els.fileList.innerHTML = "";
+  els.sheetPanel.style.display = "block";
+  els.sheetSelect.innerHTML = `<option>Loading...</option>`;
+  try{
+    const shareToken = encodeShareUrl(SHARE_LINK);
+    const item = await graphGet(`/shares/${shareToken}/driveItem?$select=id,name,parentReference`);
+    currentFile = {
+      id: item.id,
+      name: item.name,
+      driveId: item.parentReference.driveId
+    };
+    els.fileLabel.textContent = currentFile.name;
+    els.refreshBtn.disabled = false;
+
+    const sheetsRes = await graphGet(`/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets`);
+    const sheets = sheetsRes.value || [];
+    els.sheetSelect.innerHTML = "";
+    sheets.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.name;
+      opt.textContent = s.name;
+      els.sheetSelect.appendChild(opt);
+    });
+    if(sheets.length){
+      currentSheet = sheets[0].name;
+      await loadSheetData();
+    }
+  }catch(e){
+    showError("Couldn't open the linked file: " + e.message + ". Make sure your Microsoft account has access to it and that Sites.Read.All / Files.Read.All were granted consent.");
+  }
+}
+
+els.sheetSelect.addEventListener("change", async (e) => {
+  currentSheet = e.target.value;
+  await loadSheetData();
+});
+
+els.changeFileBtn.style.display = "none"; // dashboard is pinned to SHARE_LINK
+
+async function loadSheetData(){
+  clearError();
+  try{
+    const range = await graphGet(
+      `/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets('${encodeURIComponent(currentSheet)}')/usedRange`
+    );
+    renderDashboard(range.values || []);
+  }catch(e){
+    showError("Couldn't read data: " + e.message);
+  }
+}
+
+function renderDashboard(values){
+  if(values.length < 2){
+    els.dashboard.style.display = "none";
+    showError("This sheet doesn't have enough data to chart.");
+    return;
+  }
+  const headers = values[0];
+  const rows = values.slice(1);
+
+  // find numeric columns
+  const numericCols = headers.map((h, i) => {
+    const isNum = rows.every(r => r[i] === "" || r[i] === undefined || typeof r[i] === "number");
+    const hasAny = rows.some(r => typeof r[i] === "number");
+    return isNum && hasAny ? i : -1;
+  }).filter(i => i !== -1);
+
+  const labelColIndex = headers.findIndex((h, i) => !numericCols.includes(i));
+  const labels = rows.map(r => (labelColIndex >= 0 ? r[labelColIndex] : "") ?? "");
+
+  // stats
+  els.statsRow.innerHTML = "";
+  addStat("Rows", rows.length);
+  addStat("Columns", headers.length);
+  numericCols.slice(0, 3).forEach(i => {
+    const vals = rows.map(r => r[i]).filter(v => typeof v === "number");
+    const sum = vals.reduce((a,b) => a+b, 0);
+    addStat(headers[i] + " (sum)", formatNum(sum));
+  });
+
+  // chart: first numeric column vs label column
+  const chartCanvas = document.getElementById("mainChart");
+  if(chartInstance) chartInstance.destroy();
+  if(numericCols.length > 0){
+    const colIndex = numericCols[0];
+    chartInstance = new Chart(chartCanvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: headers[colIndex],
+          data: rows.map(r => r[colIndex]),
+          backgroundColor: "#2B6E5E"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
+          y: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } }
+        }
+      }
+    });
+  }
+
+  // table
+  const table = els.dataTable;
+  table.innerHTML = "";
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  rows.slice(0, 200).forEach(r => {
+    const tr = document.createElement("tr");
+    headers.forEach((h, i) => {
+      const td = document.createElement("td");
+      td.textContent = r[i] ?? "";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  els.dashboard.style.display = "block";
+}
+
+function addStat(label, value){
+  const div = document.createElement("div");
+  div.className = "stat";
+  div.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+  els.statsRow.appendChild(div);
+}
+
+function formatNum(n){
+  if(Math.abs(n) >= 1000) return n.toLocaleString(undefined, {maximumFractionDigits: 2});
+  return Math.round(n * 100) / 100;
+}
+
+async function graphGet(path){
+  const res = await fetch("https://graph.microsoft.com/v1.0" + path, {
+    headers: { Authorization: "Bearer " + accessToken }
+  });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error(`${res.status} ${res.statusText} - ${body.slice(0,200)}`);
+  }
+  return res.json();
+}
+
+els.loginBtn.addEventListener("click", login);
+els.loginBtn2.addEventListener("click", login);
+els.refreshBtn.addEventListener("click", async () => {
+  accessToken = await getToken();
+  if(currentFile && currentSheet){
+    await loadSheetData();
+  }
+});
+
+// try silent sign-in on load
+(async () => {
+  await msalInstance.handleRedirectPromise();
+  const account = msalInstance.getAllAccounts()[0];
+  if(account){
+    msalInstance.setActiveAccount(account);
+    try{
+      accessToken = await getToken();
+      await onSignedIn();
+    }catch(e){ /* needs interactive login */ }
+  }
+})();
+</script>
+</body>
+</html>
