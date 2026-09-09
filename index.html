@@ -215,8 +215,10 @@ const msalConfig = {
   cache: { cacheLocation: "localStorage" }
 };
 const msalInstance = new msal.PublicClientApplication(msalConfig);
-// Sites.Read.All is needed because this file lives on a SharePoint/OneDrive-for-Business site.
-const GRAPH_SCOPES = ["Files.Read", "Files.Read.All", "Sites.Read.All"];
+// Files.Read.All covers files shared with you (not just ones you own) — needed for shared OneDrive links.
+// (Sites.Read.All was removed: this file lives on a personal OneDrive, not a SharePoint team site,
+// and Sites.Read.All is a broad permission that usually forces admin approval unnecessarily.)
+const GRAPH_SCOPES = ["Files.Read", "Files.Read.All"];
 
 let accessToken = null;
 let currentFile = null; // {id, name, driveId}
