@@ -14,8 +14,9 @@ name: Refresh EWO data
 
 on:
   schedule:
-    # Every 30 minutes. GitHub queues cron jobs, so expect a few minutes' drift.
-    - cron: "*/30 * * * *"
+    # Every 15 minutes. GitHub queues scheduled jobs, so a few minutes of
+    # drift is normal and busy periods can delay a run further.
+    - cron: "*/15 * * * *"
   workflow_dispatch:        # lets you run it by hand from the Actions tab
   push:
     paths:
