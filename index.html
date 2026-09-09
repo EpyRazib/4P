@@ -189,25 +189,26 @@
 
 <script>
 /* ============================================================
-   THE ONLY THING YOU NEED TO EDIT
+   NOTHING HERE NEEDS EDITING FOR THE NORMAL SETUP
 
-   Paste the URL that Power Automate shows on the trigger
-   "When an HTTP request is received", between the quotes below.
+   The page reads data.json, which sits next to this file in the
+   repository. A GitHub Action rebuilds that file from the OneDrive
+   workbook on a schedule and commits it, so visitors always get
+   current numbers without signing in or choosing anything.
 
-   That flow opens your OneDrive workbook using YOUR Microsoft 365
-   account and hands the rows back to this page. Viewers never sign
-   in and never choose a file. There is no Azure app registration
-   and nothing for an admin to consent to.
+   The workbook itself cannot be read by this page directly. OneDrive
+   sends no cross-origin headers, and its old anonymous API now
+   answers "unauthenticated". That is why the download happens in the
+   Action instead, where those rules do not apply.
 
-   Setup steps for the flow are in README.md.
+   Setup steps are in README.md. FLOW_URL below is an alternative for
+   anyone who would rather use Power Automate than the Action.
    ============================================================ */
-var FLOW_URL = "https://epylliongroup-my.sharepoint.com/:x:/r/personal/bp1_epylliongroup_com/Documents/BUSINESS%20PLAN%20_%2001/Epyllion%2027/0.%20EWO%20LIFE%20CYCLE_u/EWO%20Life%20Cycle%202026-27.xlsx?d=wd9672578d88e465c93ed6f6b72ff68f0&csf=1&web=1&e=5DDlwa";
+var DATA_URL = "data.json";
+var AUTO_REFRESH_MINUTES = 10;   // re-check data.json on a timer. 0 turns it off.
 
-/* Optional settings, sensible defaults already set. */
-var FLOW_METHOD = "POST";        // matches the default flow URL. Use "GET" only
-                                 // if you set the trigger's Method to GET.
-var AUTO_REFRESH_MINUTES = 10;   // re-read the workbook on a timer. 0 turns it off.
-var DATA_URL = "data.json";      // fallback snapshot, used only if FLOW_URL is empty
+var FLOW_URL = "";               // optional Power Automate endpoint, tried before data.json
+var FLOW_METHOD = "POST";
 var SHEET_MAIN = "EWO";
 var SHEET_FABRIC = "Fsum";
 var SHEET_SEW = "Ssum";
@@ -267,7 +268,23 @@ function normaliseBundle(raw){
   return { EWO: pick(SHEET_MAIN), Fsum: pick(SHEET_FABRIC), Ssum: pick(SHEET_SEW) };
 }
 
+/* The commonest setup mistake is pasting the workbook's own OneDrive address
+   here. That address is used inside the flow, not by this page, and a browser
+   is not allowed to call SharePoint from another site. Catch it by name so the
+   message says so, rather than reporting a bare network failure. */
+function looksLikeFileLink(url){
+  return /sharepoint\.com|onedrive\.live\.com|1drv\.ms/i.test(url);
+}
+
 async function loadFromFlow(){
+  if(looksLikeFileLink(FLOW_URL)){
+    throw new Error("FLOW_URL currently holds the workbook's own OneDrive address. That is not "
+      + "what goes here. The workbook address is used inside the flow, on the Excel action. "
+      + "FLOW_URL must be the address Power Automate shows on the trigger \"When an HTTP request "
+      + "is received\". It contains logic.azure.com and ends with a long sig= value. "
+      + "See Step 2 in README.md.");
+  }
+
   var res;
   try{
     res = await fetch(FLOW_URL, {
@@ -401,6 +418,10 @@ function fmtDate(v){
   if(typeof v === "number" && v > 20000 && v < 60000) return fmtParts(serialToDate(v));
 
   var s = String(v).trim();
+
+  // Some cells hold a bare time such as "00:00:00" where a date was meant.
+  // That is not a date, so show nothing rather than a meaningless clock value.
+  if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return "";
 
   if(/^\d+(\.\d+)?$/.test(s)){
     var n = parseFloat(s);
@@ -650,27 +671,26 @@ els.refreshBtn.addEventListener("click", function(){
    ============================================================ */
 (async function(){
   if(FLOW_URL){
-    els.fileLabel.textContent = "Live from OneDrive";
-    await run(loadFromFlow, "Live from OneDrive");
+    els.fileLabel.textContent = "Live via Power Automate";
+    await run(loadFromFlow, "Live via Power Automate");
     return;
   }
 
-  if(DATA_URL){
-    try{
-      var bundle = await loadFromJson();
-      await run(function(){ return Promise.resolve(bundle); }, "Snapshot: " + DATA_URL);
-      return;
-    }catch(e){ /* no snapshot, fall through to the setup message */ }
+  try{
+    var bundle = await loadFromJson();
+    await run(function(){ return Promise.resolve(bundle); }, "OneDrive workbook");
+    return;
+  }catch(e){
+    els.loadingState.style.display = "none";
+    els.fileLabel.textContent = "No data published yet";
+    setStatus("No data yet", "err");
+    showError("<strong>The data file has not been published yet.</strong><br/><br/>"
+      + "This page reads <code>data.json</code>, which the GitHub Action builds from your "
+      + "OneDrive workbook. Open the <strong>Actions</strong> tab in the repository and run "
+      + "<strong>Refresh EWO data</strong> once. After it finishes, reload this page.<br/><br/>"
+      + "If the run failed, the usual cause is a missing <code>ONEDRIVE_SHARE_URL</code> secret. "
+      + "Step 2 in README.md covers it.");
   }
-
-  els.loadingState.style.display = "none";
-  els.fileLabel.textContent = "Not configured";
-  setStatus("Not configured", "err");
-  showError("<strong>This dashboard has not been connected yet.</strong><br/><br/>"
-    + "Open <code>index.html</code>, find <code>var FLOW_URL = \"\";</code> near the top of the "
-    + "script, and paste in the URL from your Power Automate trigger. Commit and push, and the "
-    + "page will load the workbook by itself for everyone who opens it.<br/><br/>"
-    + "The steps for building that flow are in README.md.");
 })();
 </script>
 </body>
