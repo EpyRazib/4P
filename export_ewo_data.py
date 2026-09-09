@@ -254,6 +254,10 @@ def main():
 
     wb.close()
 
+    # The dashboard shows how fresh the data is, and skips re-rendering when
+    # this value has not moved since its last poll.
+    payload["generated"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
     with open(out, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
 
