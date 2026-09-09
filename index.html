@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ledger — OneDrive Data Dashboard</title>
+<title>EWO Life Cycle Dashboard</title>
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -16,6 +16,7 @@
     --teal-dim:#E7EFEC;
     --rust:#C7511F;
     --rust-dim:#F7E9E2;
+    --amber:#B98900;
   }
   *{box-sizing:border-box;}
   body{
@@ -37,19 +38,21 @@
     justify-content:space-between;
     padding:20px 28px;
     border-bottom:1px solid var(--line);
-    background:var(--paper);
+    flex-wrap:wrap;
+    gap:12px;
   }
   .topbar h1{font-size:20px;letter-spacing:-0.01em;}
   .topbar .sub{color:var(--ink-soft);font-size:12px;margin-top:2px;}
   .status{
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:8px;
     font-size:12px;
     color:var(--ink-soft);
   }
   .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-soft);}
   .dot.live{background:var(--teal);}
+  .dot.err{background:var(--rust);}
   button{
     font-family:inherit;
     font-size:13px;
@@ -60,27 +63,18 @@
     cursor:pointer;
     border-radius:2px;
   }
-  button.secondary{
-    background:transparent;
-    color:var(--ink);
-  }
-  button:disabled{opacity:0.4;cursor:default;}
-  main{max-width:1100px;margin:0 auto;padding:32px 28px 80px;}
+  button.secondary{background:transparent;color:var(--ink);}
+  button:disabled{opacity:0.5;cursor:default;}
+  main{max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
   .panel{
     border:1px solid var(--line);
-    padding:24px;
+    padding:22px;
     margin-bottom:20px;
     background:#fff;
   }
-  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
-  select{
-    font-family:inherit;
-    font-size:13px;
-    padding:8px 10px;
-    border:1px solid var(--line);
-    background:var(--paper);
-    color:var(--ink);
-  }
+  .panel h3{font-size:16px;margin-bottom:16px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:800px){.two-col{grid-template-columns:1fr;}}
   .grid-stats{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
@@ -89,70 +83,43 @@
     border:1px solid var(--line);
     margin-bottom:20px;
   }
-  .stat{
-    background:#fff;
-    padding:18px 20px;
-  }
+  .stat{background:#fff;padding:18px 20px;}
   .stat .label{color:var(--ink-soft);font-size:11px;margin-bottom:6px;}
   .stat .value{font-family:Georgia,serif;font-size:26px;color:var(--teal);}
-  table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
-  }
-  th,td{
-    text-align:left;
-    padding:8px 10px;
-    border-bottom:1px solid var(--line);
-    white-space:nowrap;
-  }
-  th{
-    color:var(--ink-soft);
-    font-weight:normal;
-    border-bottom:1px solid var(--ink);
-  }
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{color:var(--ink-soft);font-weight:normal;border-bottom:1px solid var(--ink);position:sticky;top:0;background:#fff;}
   tr:hover td{background:var(--teal-dim);}
-  .table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;}
-  .empty{
-    text-align:center;
-    padding:80px 20px;
-    color:var(--ink-soft);
-  }
+  .table-wrap{overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid var(--line);}
+  .chart-box{position:relative;height:280px;}
+  .empty{text-align:center;padding:100px 20px;color:var(--ink-soft);}
   .empty h2{color:var(--ink);margin-bottom:10px;font-size:22px;}
-  .empty p{max-width:420px;margin:0 auto 24px;}
-  .error{
-    background:var(--rust-dim);
-    color:var(--rust);
-    border:1px solid var(--rust);
-    padding:12px 16px;
-    margin-bottom:20px;
-    font-size:13px;
+  .empty p{max-width:460px;margin:0 auto 24px;}
+  .error{background:var(--rust-dim);color:var(--rust);border:1px solid var(--rust);padding:14px 16px;margin-bottom:20px;font-size:13px;}
+  .filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  input[type="text"]{
+    font-family:inherit;font-size:13px;padding:8px 10px;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink);flex:1;min-width:180px;
   }
-  .chart-box{position:relative;height:320px;}
-  .file-item{
-    display:flex;
-    justify-content:space-between;
-    padding:10px 0;
-    border-bottom:1px solid var(--line);
-    cursor:pointer;
-  }
-  .file-item:hover{background:var(--teal-dim);}
-  .file-item .name{font-family:Georgia,serif;font-size:15px;}
-  .file-item .meta{color:var(--ink-soft);font-size:11px;}
-  label{font-size:12px;color:var(--ink-soft);}
-  .field{display:flex;flex-direction:column;gap:4px;}
+  select{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);}
+  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;}
+  .badge.locked{background:var(--teal-dim);color:var(--teal);}
+  .badge.hold{background:var(--rust-dim);color:var(--rust);}
+  .badge.tbc{background:#FCF3D9;color:var(--amber);}
+  .badge.cancel{background:#EDEDED;color:var(--ink-soft);}
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div>
-    <h1>Ledger</h1>
-    <div class="sub" id="fileLabel">No file selected</div>
+    <h1>EWO Life Cycle Dashboard</h1>
+    <div class="sub" id="fileLabel">Not connected</div>
   </div>
-  <div class="row">
-    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Not connected</span></div>
-    <button class="secondary" id="loginBtn">Connect OneDrive</button>
+  <div class="status">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Not connected</span>
+    <button class="secondary" id="loginBtn">Sign in with Microsoft</button>
     <button id="refreshBtn" disabled>Refresh</button>
   </div>
 </div>
@@ -161,34 +128,54 @@
   <div id="errorBox"></div>
 
   <div id="emptyState" class="empty">
-    <h2>Connect to see your data</h2>
-    <p>Sign in with your Microsoft account to open the linked Excel file and build a dashboard from it.</p>
-    <button id="loginBtn2">Connect OneDrive</button>
-  </div>
-
-  <div id="pickerPanel" class="panel" style="display:none;">
-    <h3 style="margin-bottom:12px;">Select a file</h3>
-    <div id="fileList"></div>
-  </div>
-
-  <div id="sheetPanel" class="panel" style="display:none;">
-    <div class="row" style="justify-content:space-between;">
-      <div class="field">
-        <label>Worksheet</label>
-        <select id="sheetSelect"></select>
-      </div>
-      <button class="secondary" id="changeFileBtn">Change file</button>
-    </div>
+    <h2>Sign in to see your data</h2>
+    <p>Sign in with your Microsoft account to open the linked EWO workbook. Only accounts that already have access to this file in SharePoint/OneDrive will be able to load it — this respects your existing permissions.</p>
+    <button id="loginBtn2">Sign in with Microsoft</button>
   </div>
 
   <div id="dashboard" style="display:none;">
     <div class="grid-stats" id="statsRow"></div>
-    <div class="panel">
-      <h3 style="margin-bottom:16px;">Overview</h3>
-      <div class="chart-box"><canvas id="mainChart"></canvas></div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>Status</h3>
+        <div class="chart-box"><canvas id="statusChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Execution Unit</h3>
+        <div class="chart-box"><canvas id="execChart"></canvas></div>
+      </div>
     </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>Team split</h3>
+        <div class="chart-box"><canvas id="teamChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Top buyers by order count</h3>
+        <div class="chart-box"><canvas id="buyerChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>Fabric flow by month</h3>
+        <div class="chart-box"><canvas id="fabricChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Sewing hours by month</h3>
+        <div class="chart-box"><canvas id="sewChart"></canvas></div>
+      </div>
+    </div>
+
     <div class="panel">
-      <h3 style="margin-bottom:16px;">Raw data</h3>
+      <h3>Orders</h3>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="Search EWO #, buyer, status..." />
+        <select id="statusFilter"><option value="">All statuses</option></select>
+        <select id="buyerFilter"><option value="">All buyers</option></select>
+      </div>
       <div class="table-wrap"><table id="dataTable"></table></div>
     </div>
   </div>
@@ -196,15 +183,14 @@
 
 <script>
 /* ============================================================
-   CONFIGURATION — fill these in from your Azure App Registration
+   CONFIGURATION — fill CLIENT_ID in from your Azure App Registration
    ============================================================ */
-const CLIENT_ID = "f52fc87b-2ce5-404d-aab3-acb90675308c";          // from Azure Portal -> App registrations -> Overview
+const CLIENT_ID = "f52fc87b-2ce5-404d-aab3-acb90675308c";          // Azure Portal -> App registrations -> Overview
 const REDIRECT_URI = window.location.origin + window.location.pathname; // must match Azure Redirect URI exactly
 
 // The specific OneDrive/SharePoint file this dashboard is locked to.
-// Paste any file's sharing link here to point the dashboard at a different file.
 const SHARE_LINK = "https://epylliongroup-my.sharepoint.com/:x:/p/bp1/IQB4JWfZjthcRpPtb2ty_2jwAUadoAWoVpHmYRc5lMIlMiI";
-
+const SHEET_NAME = "EWO"; // main data sheet inside the workbook
 /* ============================================================ */
 
 const msalConfig = {
@@ -216,21 +202,17 @@ const msalConfig = {
   cache: { cacheLocation: "localStorage" }
 };
 const msalInstance = new msal.PublicClientApplication(msalConfig);
-// Files.Read.All covers files shared with you (not just ones you own) — needed for SharePoint/OneDrive links like this one.
+// Sites.Read.All is needed because this file lives on a SharePoint/OneDrive-for-Business site.
 const GRAPH_SCOPES = ["Files.Read", "Files.Read.All", "Sites.Read.All"];
 
 let accessToken = null;
-let currentFile = null;   // {id, name, driveId}
-let currentSheet = null;
-let chartInstance = null;
+let currentFile = null; // {id, name, driveId}
+let charts = {};
+let allRows = [];
 
-// Encodes a sharing URL into the Graph API's "shares" token format.
-// See: https://learn.microsoft.com/graph/api/shares-get
 function encodeShareUrl(url){
   const base64 = btoa(unescape(encodeURIComponent(url)))
-    .replace(/=/g, "")
-    .replace(/\//g, "_")
-    .replace(/\+/g, "-");
+    .replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
   return "u!" + base64;
 }
 
@@ -242,21 +224,21 @@ const els = {
   statusText: document.getElementById("statusText"),
   fileLabel: document.getElementById("fileLabel"),
   emptyState: document.getElementById("emptyState"),
-  pickerPanel: document.getElementById("pickerPanel"),
-  fileList: document.getElementById("fileList"),
-  sheetPanel: document.getElementById("sheetPanel"),
-  sheetSelect: document.getElementById("sheetSelect"),
-  changeFileBtn: document.getElementById("changeFileBtn"),
   dashboard: document.getElementById("dashboard"),
   statsRow: document.getElementById("statsRow"),
   dataTable: document.getElementById("dataTable"),
-  errorBox: document.getElementById("errorBox")
+  errorBox: document.getElementById("errorBox"),
+  searchInput: document.getElementById("searchInput"),
+  statusFilter: document.getElementById("statusFilter"),
+  buyerFilter: document.getElementById("buyerFilter")
 };
 
-function showError(msg){
-  els.errorBox.innerHTML = `<div class="error">${msg}</div>`;
-}
+function showError(msg){ els.errorBox.innerHTML = `<div class="error">${msg}</div>`; }
 function clearError(){ els.errorBox.innerHTML = ""; }
+function setStatus(text, cls){
+  els.statusText.textContent = text;
+  els.statusDot.className = "dot" + (cls ? " " + cls : "");
+}
 
 async function login(){
   clearError();
@@ -282,163 +264,11 @@ async function getToken(){
 }
 
 async function onSignedIn(){
-  els.statusDot.classList.add("live");
-  els.statusText.textContent = "Connected";
+  setStatus("Connected", "live");
   els.loginBtn.style.display = "none";
   els.emptyState.style.display = "none";
   accessToken = await getToken();
-  await loadPinnedFile();
-}
-
-// Resolves SHARE_LINK to a real driveId/itemId, then loads its worksheets.
-async function loadPinnedFile(){
-  clearError();
-  els.pickerPanel.style.display = "none";
-  els.fileList.innerHTML = "";
-  els.sheetPanel.style.display = "block";
-  els.sheetSelect.innerHTML = `<option>Loading...</option>`;
-  try{
-    const shareToken = encodeShareUrl(SHARE_LINK);
-    const item = await graphGet(`/shares/${shareToken}/driveItem?$select=id,name,parentReference`);
-    currentFile = {
-      id: item.id,
-      name: item.name,
-      driveId: item.parentReference.driveId
-    };
-    els.fileLabel.textContent = currentFile.name;
-    els.refreshBtn.disabled = false;
-
-    const sheetsRes = await graphGet(`/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets`);
-    const sheets = sheetsRes.value || [];
-    els.sheetSelect.innerHTML = "";
-    sheets.forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s.name;
-      opt.textContent = s.name;
-      els.sheetSelect.appendChild(opt);
-    });
-    if(sheets.length){
-      currentSheet = sheets[0].name;
-      await loadSheetData();
-    }
-  }catch(e){
-    showError("Couldn't open the linked file: " + e.message + ". Make sure your Microsoft account has access to it and that Sites.Read.All / Files.Read.All were granted consent.");
-  }
-}
-
-els.sheetSelect.addEventListener("change", async (e) => {
-  currentSheet = e.target.value;
-  await loadSheetData();
-});
-
-els.changeFileBtn.style.display = "none"; // dashboard is pinned to SHARE_LINK
-
-async function loadSheetData(){
-  clearError();
-  try{
-    const range = await graphGet(
-      `/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets('${encodeURIComponent(currentSheet)}')/usedRange`
-    );
-    renderDashboard(range.values || []);
-  }catch(e){
-    showError("Couldn't read data: " + e.message);
-  }
-}
-
-function renderDashboard(values){
-  if(values.length < 2){
-    els.dashboard.style.display = "none";
-    showError("This sheet doesn't have enough data to chart.");
-    return;
-  }
-  const headers = values[0];
-  const rows = values.slice(1);
-
-  // find numeric columns
-  const numericCols = headers.map((h, i) => {
-    const isNum = rows.every(r => r[i] === "" || r[i] === undefined || typeof r[i] === "number");
-    const hasAny = rows.some(r => typeof r[i] === "number");
-    return isNum && hasAny ? i : -1;
-  }).filter(i => i !== -1);
-
-  const labelColIndex = headers.findIndex((h, i) => !numericCols.includes(i));
-  const labels = rows.map(r => (labelColIndex >= 0 ? r[labelColIndex] : "") ?? "");
-
-  // stats
-  els.statsRow.innerHTML = "";
-  addStat("Rows", rows.length);
-  addStat("Columns", headers.length);
-  numericCols.slice(0, 3).forEach(i => {
-    const vals = rows.map(r => r[i]).filter(v => typeof v === "number");
-    const sum = vals.reduce((a,b) => a+b, 0);
-    addStat(headers[i] + " (sum)", formatNum(sum));
-  });
-
-  // chart: first numeric column vs label column
-  const chartCanvas = document.getElementById("mainChart");
-  if(chartInstance) chartInstance.destroy();
-  if(numericCols.length > 0){
-    const colIndex = numericCols[0];
-    chartInstance = new Chart(chartCanvas, {
-      type: "bar",
-      data: {
-        labels: labels,
-        datasets: [{
-          label: headers[colIndex],
-          data: rows.map(r => r[colIndex]),
-          backgroundColor: "#2B6E5E"
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
-          y: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } }
-        }
-      }
-    });
-  }
-
-  // table
-  const table = els.dataTable;
-  table.innerHTML = "";
-  const thead = document.createElement("thead");
-  const headRow = document.createElement("tr");
-  headers.forEach(h => {
-    const th = document.createElement("th");
-    th.textContent = h;
-    headRow.appendChild(th);
-  });
-  thead.appendChild(headRow);
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  rows.slice(0, 200).forEach(r => {
-    const tr = document.createElement("tr");
-    headers.forEach((h, i) => {
-      const td = document.createElement("td");
-      td.textContent = r[i] ?? "";
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-
-  els.dashboard.style.display = "block";
-}
-
-function addStat(label, value){
-  const div = document.createElement("div");
-  div.className = "stat";
-  div.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
-  els.statsRow.appendChild(div);
-}
-
-function formatNum(n){
-  if(Math.abs(n) >= 1000) return n.toLocaleString(undefined, {maximumFractionDigits: 2});
-  return Math.round(n * 100) / 100;
+  await load();
 }
 
 async function graphGet(path){
@@ -452,13 +282,249 @@ async function graphGet(path){
   return res.json();
 }
 
+async function load(){
+  clearError();
+  setStatus("Loading...");
+  els.refreshBtn.disabled = true;
+  try{
+    if(!currentFile){
+      const shareToken = encodeShareUrl(SHARE_LINK);
+      const item = await graphGet(`/shares/${shareToken}/driveItem?$select=id,name,parentReference`);
+      currentFile = { id: item.id, name: item.name, driveId: item.parentReference.driveId };
+      els.fileLabel.textContent = currentFile.name;
+    }
+
+    const ewoRange = await graphGet(
+      `/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets('${encodeURIComponent(SHEET_NAME)}')/usedRange`
+    );
+    parseEwoSheet(ewoRange.values || []);
+
+    await loadMonthlySheet("Fsum", "fabricChart", "Fabric qty");
+    await loadMonthlySheet("Ssum", "sewChart", "Sewing hours");
+
+    els.dashboard.style.display = "block";
+    els.emptyState.style.display = "none";
+    setStatus("Live — updated " + new Date().toLocaleTimeString(), "live");
+    els.refreshBtn.disabled = false;
+  }catch(e){
+    els.dashboard.style.display = "none";
+    els.emptyState.style.display = "block";
+    showError("Couldn't load the file: " + e.message + ". Make sure your account has access to it and that Sites.Read.All / Files.Read.All consent was granted.");
+    setStatus("Couldn't load", "err");
+    els.refreshBtn.disabled = false;
+  }
+}
+
+async function loadMonthlySheet(sheetName, canvasId, label){
+  destroyChart(canvasId);
+  try{
+    const range = await graphGet(
+      `/drives/${currentFile.driveId}/items/${currentFile.id}/workbook/worksheets('${encodeURIComponent(sheetName)}')/usedRange`
+    );
+    const rows = range.values || [];
+    const monthRe = /^[A-Za-z]+\s?\d{2}$/;
+    const seen = new Map();
+    rows.forEach(r => {
+      const m = r[0], v = r[1];
+      if(typeof m === "string" && monthRe.test(m.trim()) && typeof v === "number" && !seen.has(m.trim())){
+        seen.set(m.trim(), v);
+      }
+    });
+    const labels = [...seen.keys()];
+    const values = [...seen.values()];
+    if(labels.length === 0) return;
+    charts[canvasId] = new Chart(document.getElementById(canvasId), {
+      type: "line",
+      data: { labels, datasets: [{ label, data: values, borderColor: "#2B6E5E", backgroundColor: "#E7EFEC", fill: true, tension: 0.25, pointRadius: 3 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
+          y: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } }
+        }
+      }
+    });
+  }catch(e){ /* optional sheet, skip silently if missing */ }
+}
+
+function findHeaderRow(rows, mustContain){
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const rowVals = (rows[i]||[]).map(v => (v==null?"":String(v)).trim().toLowerCase());
+    if(mustContain.every(m => rowVals.includes(m))) return i;
+  }
+  return -1;
+}
+
+function toNum(v){
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseEwoSheet(rows){
+  const headerRowIdx = findHeaderRow(rows, ["status", "buyer"]);
+  if(headerRowIdx === -1) throw new Error(`Couldn't find a header row with "Status" and "Buyer" columns in sheet "${SHEET_NAME}".`);
+
+  const headers = rows[headerRowIdx];
+  const headerMap = {};
+  headers.forEach((h, i) => { if(h) headerMap[String(h).trim().toLowerCase()] = i; });
+  const col = (name) => headerMap[name.toLowerCase()];
+  const idIdx = col("EWO");
+
+  const dataRows = rows.slice(headerRowIdx + 1).filter(r => idIdx != null && r[idIdx] != null && r[idIdx] !== "");
+
+  allRows = dataRows.map(r => ({
+    ewo: r[col("EWO")],
+    status: r[col("Status")] ?? "Unknown",
+    note: col("Latest note") != null ? r[col("Latest note")] : "",
+    team: col("Team") != null ? (r[col("Team")] ?? "Unknown") : "Unknown",
+    buyer: col("Buyer") != null ? (r[col("Buyer")] ?? "Unknown") : "Unknown",
+    dept: col("Dept") != null ? r[col("Dept")] : "",
+    execUnit: col("Execution Unit") != null ? (r[col("Execution Unit")] ?? "Unknown") : "Unknown",
+    orderQty: toNum(r[col("Order Qty")]),
+    fabQty: toNum(r[col("Fab Qty")]),
+    orderBankDate: col("Order Bank Date") != null ? r[col("Order Bank Date")] : null
+  }));
+
+  renderStats();
+  renderBreakdown("status", "statusChart", "Status");
+  renderBreakdown("execUnit", "execChart", "Execution Unit");
+  renderBreakdown("team", "teamChart", "Team");
+  renderTopBuyers();
+  renderTable(allRows);
+  populateFilters();
+}
+
+function renderStats(){
+  els.statsRow.innerHTML = "";
+  const totalOrders = allRows.length;
+  const totalOrderQty = allRows.reduce((s,r) => s + r.orderQty, 0);
+  const totalFabQty = allRows.reduce((s,r) => s + r.fabQty, 0);
+  const distinctBuyers = new Set(allRows.map(r => r.buyer)).size;
+  const locked = allRows.filter(r => String(r.status).toLowerCase().startsWith("locked")).length;
+
+  addStat("Total EWOs", totalOrders.toLocaleString());
+  addStat("Locked", locked.toLocaleString());
+  addStat("Total Order Qty", Math.round(totalOrderQty).toLocaleString());
+  addStat("Total Fab Qty", Math.round(totalFabQty).toLocaleString());
+  addStat("Buyers", distinctBuyers);
+}
+
+function addStat(label, value){
+  const div = document.createElement("div");
+  div.className = "stat";
+  div.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+  els.statsRow.appendChild(div);
+}
+
+function countBy(field){
+  const map = {};
+  allRows.forEach(r => {
+    const key = String(r[field] ?? "Unknown").trim() || "Unknown";
+    map[key] = (map[key]||0) + 1;
+  });
+  return Object.entries(map).sort((a,b) => b[1]-a[1]);
+}
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function renderBreakdown(field, canvasId, label){
+  const entries = countBy(field);
+  const palette = ["#2B6E5E","#C7511F","#B98900","#6B7280","#8FA6D6","#A85CC1","#4E9E7E","#D98E3B"];
+  destroyChart(canvasId);
+  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: "bar",
+    data: { labels: entries.map(e => e[0]), datasets: [{ label, data: entries.map(e => e[1]), backgroundColor: entries.map((_,i) => palette[i % palette.length]) }] },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
+        y: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderTopBuyers(){
+  const entries = countBy("buyer").slice(0, 12);
+  destroyChart("buyerChart");
+  charts.buyerChart = new Chart(document.getElementById("buyerChart"), {
+    type: "bar",
+    data: { labels: entries.map(e => e[0]), datasets: [{ label: "Orders", data: entries.map(e => e[1]), backgroundColor: "#2B6E5E" }] },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { family: "IBM Plex Mono", size: 11 } } },
+        y: { ticks: { font: { family: "IBM Plex Mono", size: 10 } } }
+      }
+    }
+  });
+}
+
+function statusBadge(status){
+  const s = String(status).toLowerCase();
+  let cls = "";
+  if(s.startsWith("locked")) cls = "locked";
+  else if(s.includes("hold") || s.includes("block")) cls = "hold";
+  else if(s.includes("tbc") || s.includes("later") || s.includes("pending")) cls = "tbc";
+  else if(s.includes("cancel")) cls = "cancel";
+  return `<span class="badge ${cls}">${status}</span>`;
+}
+
+function renderTable(rows){
+  const table = els.dataTable;
+  table.innerHTML = "";
+  const thead = document.createElement("thead");
+  thead.innerHTML = `<tr>
+    <th>EWO</th><th>Status</th><th>Buyer</th><th>Team</th><th>Execution Unit</th>
+    <th>Order Qty</th><th>Fab Qty</th><th>Order Bank Date</th><th>Note</th>
+  </tr>`;
+  table.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  rows.slice(0, 300).forEach(r => {
+    const tr = document.createElement("tr");
+    const date = r.orderBankDate instanceof Date ? r.orderBankDate.toLocaleDateString() : (r.orderBankDate ?? "");
+    tr.innerHTML = `<td>${r.ewo}</td><td>${statusBadge(r.status)}</td><td>${r.buyer}</td><td>${r.team}</td>
+      <td>${r.execUnit}</td><td>${Math.round(r.orderQty).toLocaleString()}</td><td>${Math.round(r.fabQty).toLocaleString()}</td>
+      <td>${date}</td><td>${r.note ?? ""}</td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+}
+
+function populateFilters(){
+  const statuses = [...new Set(allRows.map(r => r.status))].sort();
+  const buyers = [...new Set(allRows.map(r => r.buyer))].sort();
+  els.statusFilter.innerHTML = `<option value="">All statuses</option>` + statuses.map(s => `<option value="${s}">${s}</option>`).join("");
+  els.buyerFilter.innerHTML = `<option value="">All buyers</option>` + buyers.map(b => `<option value="${b}">${b}</option>`).join("");
+}
+
+function applyFilters(){
+  const q = els.searchInput.value.trim().toLowerCase();
+  const statusF = els.statusFilter.value;
+  const buyerF = els.buyerFilter.value;
+  const filtered = allRows.filter(r => {
+    if(statusF && r.status !== statusF) return false;
+    if(buyerF && r.buyer !== buyerF) return false;
+    if(q){
+      const hay = `${r.ewo} ${r.status} ${r.buyer} ${r.team} ${r.execUnit} ${r.note}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderTable(filtered);
+}
+
+els.searchInput.addEventListener("input", applyFilters);
+els.statusFilter.addEventListener("change", applyFilters);
+els.buyerFilter.addEventListener("change", applyFilters);
 els.loginBtn.addEventListener("click", login);
 els.loginBtn2.addEventListener("click", login);
 els.refreshBtn.addEventListener("click", async () => {
   accessToken = await getToken();
-  if(currentFile && currentSheet){
-    await loadSheetData();
-  }
+  await load();
 });
 
 // try silent sign-in on load
