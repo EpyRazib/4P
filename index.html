@@ -11,109 +11,139 @@
     --ink:#1C1F22;
     --ink-soft:#6B7280;
     --line:#E3E1D9;
+    --line-soft:#F0EEE7;
     --teal:#2B6E5E;
     --teal-dim:#E7EFEC;
     --rust:#C7511F;
     --rust-dim:#F7E9E2;
     --amber:#B98900;
     --amber-dim:#FCF3D9;
+    --blue:#3B6FA8;
+    --blue-dim:#E6EDF5;
   }
   *{box-sizing:border-box;}
   body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
+    margin:0;background:var(--paper);color:var(--ink);
     font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
-    font-size:14px;
-    line-height:1.5;
+    font-size:14px;line-height:1.5;
   }
-  h1,h2,h3{
-    font-family:Georgia,"Source Serif 4",serif;
-    font-weight:600;
-    margin:0;
-  }
+  h1,h2,h3{font-family:Georgia,"Source Serif 4",serif;font-weight:600;margin:0;}
+
   .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:20px 28px;
-    border-bottom:1px solid var(--line);
-    flex-wrap:wrap;
-    gap:12px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 24px;border-bottom:1px solid var(--line);
+    flex-wrap:wrap;gap:12px;background:#fff;
   }
-  .topbar h1{font-size:20px;letter-spacing:-0.01em;}
-  .topbar .sub{color:var(--ink-soft);font-size:12px;margin-top:2px;}
-  .status{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:12px;
-    color:var(--ink-soft);
-    flex-wrap:wrap;
-  }
+  .topbar h1{font-size:19px;letter-spacing:-0.01em;}
+  .topbar .sub{color:var(--ink-soft);font-size:11.5px;margin-top:2px;}
+  .status{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap;}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-soft);flex:none;}
-  .dot.live{background:var(--teal);}
-  .dot.err{background:var(--rust);}
-  .dot.busy{background:var(--amber);}
+  .dot.live{background:var(--teal);} .dot.err{background:var(--rust);} .dot.busy{background:var(--amber);}
+
   button{
-    font-family:inherit;
-    font-size:13px;
-    padding:9px 16px;
-    border:1px solid var(--ink);
-    background:var(--ink);
-    color:var(--paper);
-    cursor:pointer;
-    border-radius:2px;
+    font-family:inherit;font-size:12.5px;padding:8px 14px;
+    border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+    cursor:pointer;border-radius:2px;
   }
+  button.secondary{background:transparent;color:var(--ink);}
+  button.tiny{padding:5px 10px;font-size:11.5px;}
   button:disabled{opacity:0.4;cursor:default;}
-  main{max-width:1180px;margin:0 auto;padding:28px 28px 80px;}
-  .panel{
-    border:1px solid var(--line);
-    padding:22px;
-    margin-bottom:20px;
-    background:#fff;
+
+  main{max-width:1500px;margin:0 auto;padding:20px 24px 80px;}
+
+  .filters{
+    background:#fff;border:1px solid var(--line);padding:14px 16px;margin-bottom:18px;
+    position:sticky;top:0;z-index:20;
+    /* the bar floats over the page while scrolling, so give it a soft edge
+       rather than letting it look like a broken join */
+    box-shadow:0 3px 10px rgba(28,31,34,0.07);
   }
-  .panel h3{font-size:16px;margin-bottom:16px;}
-  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-  @media(max-width:800px){.two-col{grid-template-columns:1fr;}}
-  .grid-stats{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:1px;
-    background:var(--line);
-    border:1px solid var(--line);
-    margin-bottom:20px;
+  .filter-grid{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .fld{display:flex;flex-direction:column;gap:3px;}
+  .fld label{font-size:10px;color:var(--ink-soft);letter-spacing:0.03em;text-transform:uppercase;}
+  input[type="text"],input[type="date"],select{
+    font-family:inherit;font-size:12.5px;padding:6px 8px;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:2px;
   }
-  .stat{background:#fff;padding:18px 20px;}
-  .stat .label{color:var(--ink-soft);font-size:11px;margin-bottom:6px;}
-  .stat .value{font-family:Georgia,serif;font-size:26px;color:var(--teal);}
-  table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
-  th{color:var(--ink-soft);font-weight:normal;border-bottom:1px solid var(--ink);position:sticky;top:0;background:#fff;}
-  tr:hover td{background:var(--teal-dim);}
-  .table-wrap{overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid var(--line);}
-  .chart-box{position:relative;height:280px;}
-  .error{background:var(--rust-dim);color:var(--rust);border:1px solid var(--rust);padding:16px 18px;margin-bottom:20px;font-size:13px;}
-  .error code{background:#fff;padding:1px 5px;border:1px solid var(--rust);}
-  .filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-  input[type="text"]{
-    font-family:inherit;font-size:13px;padding:8px 10px;
-    border:1px solid var(--line);background:var(--paper);color:var(--ink);flex:1;min-width:180px;
+  input[type="text"].wide{min-width:230px;}
+  select{max-width:190px;}
+  .filter-note{font-size:11.5px;color:var(--ink-soft);margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .chip{background:var(--teal-dim);color:var(--teal);padding:2px 9px;border-radius:10px;font-size:11px;}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px;}
+  .kpi{background:#fff;padding:14px 16px;}
+  .kpi .label{color:var(--ink-soft);font-size:10.5px;margin-bottom:5px;letter-spacing:0.02em;}
+  .kpi .value{font-family:Georgia,serif;font-size:23px;color:var(--teal);line-height:1.15;}
+  .kpi .foot{font-size:10.5px;color:var(--ink-soft);margin-top:3px;}
+
+  .section-head{font-size:15px;margin-bottom:3px;}
+  .section-hint{font-size:11px;color:var(--ink-soft);margin-bottom:12px;}
+
+  .alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px;margin-bottom:18px;}
+  .alert{
+    background:#fff;border:1px solid var(--line);border-left:3px solid var(--ink-soft);
+    padding:12px 14px;cursor:pointer;text-align:left;font-family:inherit;color:inherit;
+    border-radius:0;display:block;width:100%;
   }
-  select{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);}
-  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;}
+  .alert:hover{background:var(--line-soft);}
+  .alert.on{border-color:var(--ink);background:var(--teal-dim);}
+  .alert.sev-high{border-left-color:var(--rust);}
+  .alert.sev-mid{border-left-color:var(--amber);}
+  .alert.sev-low{border-left-color:var(--blue);}
+  .alert .n{font-family:Georgia,serif;font-size:20px;display:block;}
+  .alert.sev-high .n{color:var(--rust);} .alert.sev-mid .n{color:var(--amber);} .alert.sev-low .n{color:var(--blue);}
+  .alert .t{font-size:11.5px;margin-top:2px;display:block;}
+  .alert .d{font-size:10.5px;color:var(--ink-soft);margin-top:3px;display:block;}
+
+  .panel{border:1px solid var(--line);padding:18px;margin-bottom:18px;background:#fff;}
+  .panel h3{font-size:15px;margin-bottom:3px;}
+  .panel .hint{font-size:11px;color:var(--ink-soft);margin-bottom:14px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  @media(max-width:1100px){.grid3{grid-template-columns:1fr 1fr;}}
+  @media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr;}}
+  .chart-box{position:relative;height:265px;}
+  .chart-box.tall{height:320px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+  th{
+    color:var(--ink-soft);font-weight:normal;border-bottom:1px solid var(--ink);
+    position:sticky;top:0;background:#fff;cursor:pointer;user-select:none;z-index:2;
+  }
+  th:hover{color:var(--ink);}
+  th .arrow{opacity:0.5;font-size:10px;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tbody tr:hover td{background:var(--teal-dim);}
+  tfoot td{
+    border-top:1px solid var(--ink);border-bottom:none;background:#fff;
+    font-weight:600;position:sticky;bottom:0;
+  }
+  .table-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);}
+  .table-wrap.short{max-height:420px;}
+
+  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10.5px;}
   .badge.locked{background:var(--teal-dim);color:var(--teal);}
   .badge.hold{background:var(--rust-dim);color:var(--rust);}
   .badge.tbc{background:var(--amber-dim);color:var(--amber);}
   .badge.cancel{background:#EDEDED;color:var(--ink-soft);}
+
+  .pager{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap;}
+  details.cols{margin-top:10px;}
+  details.cols summary{font-size:11.5px;color:var(--ink-soft);cursor:pointer;}
+  .colgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:2px 14px;margin-top:10px;
+           border:1px solid var(--line);padding:12px;background:var(--paper);}
+  .colgrid label{font-size:11.5px;display:flex;gap:6px;align-items:center;cursor:pointer;}
+  .colgrid label.empty span{color:var(--ink-soft);font-style:italic;}
+
+  .error{background:var(--rust-dim);color:var(--rust);border:1px solid var(--rust);padding:16px 18px;margin-bottom:18px;font-size:13px;}
+  .error code{background:#fff;padding:1px 5px;border:1px solid var(--rust);}
   .loading{text-align:center;padding:110px 20px;color:var(--ink-soft);}
   .loading h2{color:var(--ink);font-size:20px;margin-bottom:8px;}
-  .spinner{
-    width:22px;height:22px;margin:0 auto 22px;
-    border:2px solid var(--line);border-top-color:var(--teal);border-radius:50%;
-    animation:spin 0.8s linear infinite;
-  }
+  .spinner{width:22px;height:22px;margin:0 auto 22px;border:2px solid var(--line);
+           border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
+  .empty-note{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:12.5px;}
 </style>
 </head>
 <body>
@@ -121,12 +151,13 @@
 <div class="topbar">
   <div>
     <h1>EWO Life Cycle Dashboard</h1>
-    <div class="sub" id="fileLabel">Connecting to OneDrive</div>
+    <div class="sub" id="fileLabel">Loading</div>
   </div>
   <div class="status">
     <span class="dot busy" id="statusDot"></span>
     <span id="statusText">Loading</span>
-    <button id="refreshBtn" disabled>Refresh</button>
+    <button class="secondary tiny" id="csvBtn">Export CSV</button>
+    <button class="tiny" id="refreshBtn" disabled>Refresh</button>
   </div>
 </div>
 
@@ -136,226 +167,298 @@
   <div id="loadingState" class="loading">
     <div class="spinner"></div>
     <h2>Loading the latest data</h2>
-    <p>Reading the EWO workbook from OneDrive.</p>
+    <p>Reading the published EWO extract.</p>
   </div>
 
   <div id="dashboard" style="display:none;">
-    <div class="grid-stats" id="statsRow"></div>
 
-    <div class="two-col">
+    <div class="filters">
+      <div class="filter-grid" id="filterGrid">
+        <div class="fld">
+          <label for="searchInput">Search</label>
+          <input type="text" id="searchInput" class="wide" placeholder="EWO, buyer, dept, note..." />
+        </div>
+        <div class="fld" id="dateFieldWrap">
+          <label for="dateField">Date field</label>
+          <select id="dateField"></select>
+        </div>
+        <div class="fld">
+          <label for="dateFrom">From</label>
+          <input type="date" id="dateFrom" />
+        </div>
+        <div class="fld">
+          <label for="dateTo">To</label>
+          <input type="date" id="dateTo" />
+        </div>
+        <div class="fld">
+          <label>&nbsp;</label>
+          <button class="secondary tiny" id="resetBtn">Reset all</button>
+        </div>
+      </div>
+      <div class="filter-note">
+        <span id="filterSummary"></span>
+        <span id="activeChips"></span>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpiRow"></div>
+
+    <h3 class="section-head">Needs attention</h3>
+    <div class="section-hint">
+      Click a card to filter everything below to just those orders. Click it again to clear.
+    </div>
+    <div class="alerts" id="alertRow"></div>
+
+    <div class="grid3">
       <div class="panel">
         <h3>Status</h3>
+        <div class="hint">Orders by planning state</div>
         <div class="chart-box"><canvas id="statusChart"></canvas></div>
       </div>
       <div class="panel">
         <h3>Execution Unit</h3>
+        <div class="hint">Order quantity by factory</div>
         <div class="chart-box"><canvas id="execChart"></canvas></div>
       </div>
-    </div>
-
-    <div class="two-col">
       <div class="panel">
-        <h3>Team split</h3>
+        <h3>Team</h3>
+        <div class="hint">Order quantity by merchandising team</div>
         <div class="chart-box"><canvas id="teamChart"></canvas></div>
       </div>
+    </div>
+
+    <div class="grid2">
       <div class="panel">
-        <h3>Top buyers by order count</h3>
-        <div class="chart-box"><canvas id="buyerChart"></canvas></div>
+        <h3>Top buyers</h3>
+        <div class="hint">By order quantity, largest twelve</div>
+        <div class="chart-box tall"><canvas id="buyerChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Fabric sourcing split</h3>
+        <div class="hint">In-house knitting against outside purchase</div>
+        <div class="chart-box tall"><canvas id="sourceChart"></canvas></div>
       </div>
     </div>
 
-    <div class="two-col">
+    <div class="grid3">
+      <div class="panel">
+        <h3>Order quantity by PCD month</h3>
+        <div class="hint">Cutting load ahead, from Adjusted PCD</div>
+        <div class="chart-box"><canvas id="pcdChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Fabric quantity by fabric start</h3>
+        <div class="hint">From Adjusted Fabric Start</div>
+        <div class="chart-box"><canvas id="fabMonthChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Sewing hours by sew start</h3>
+        <div class="hint">FR hour, from Adjusted sew start</div>
+        <div class="chart-box"><canvas id="sewMonthChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid2">
       <div class="panel">
         <h3>Fabric flow by month</h3>
+        <div class="hint">Straight from the Fsum sheet, so filters do not change it</div>
         <div class="chart-box"><canvas id="fabricChart"></canvas></div>
       </div>
       <div class="panel">
         <h3>Sewing hours by month</h3>
+        <div class="hint">Straight from the Ssum sheet, so filters do not change it</div>
         <div class="chart-box"><canvas id="sewChart"></canvas></div>
       </div>
     </div>
 
     <div class="panel">
-      <h3>Orders</h3>
-      <div class="filter-bar">
-        <input type="text" id="searchInput" placeholder="Search EWO #, buyer, status..." />
-        <select id="statusFilter"><option value="">All statuses</option></select>
-        <select id="buyerFilter"><option value="">All buyers</option></select>
+      <h3>Summary</h3>
+      <div class="hint">
+        Totals grouped by
+        <select id="groupBy" style="margin:0 4px;"></select>
+        Click a column heading to sort. The bottom row totals every group shown.
       </div>
-      <div class="table-wrap"><table id="dataTable"></table></div>
+      <div class="table-wrap short"><table id="pivotTable"></table></div>
     </div>
+
+    <div class="panel">
+      <h3>Orders</h3>
+      <div class="hint" id="detailHint"></div>
+      <div class="table-wrap"><table id="dataTable"></table></div>
+      <div class="pager">
+        <button class="secondary tiny" id="prevPage">Previous</button>
+        <span id="pageInfo"></span>
+        <button class="secondary tiny" id="nextPage">Next</button>
+        <span style="margin-left:auto;">
+          Rows per page
+          <select id="pageSize" style="margin-left:4px;">
+            <option>50</option><option selected>100</option><option>250</option><option>500</option>
+          </select>
+        </span>
+      </div>
+      <details class="cols">
+        <summary>Choose columns</summary>
+        <div class="colgrid" id="colChooser"></div>
+      </details>
+    </div>
+
   </div>
 </main>
 
 <script>
 /* ============================================================
-   NOTHING HERE NEEDS EDITING FOR THE NORMAL SETUP
-
-   The page reads data.json, which sits next to this file in the
-   repository. A GitHub Action rebuilds that file from the OneDrive
-   workbook on a schedule and commits it, so visitors always get
-   current numbers without signing in or choosing anything.
-
-   The workbook itself cannot be read by this page directly. OneDrive
-   sends no cross-origin headers, and its old anonymous API now
-   answers "unauthenticated". That is why the download happens in the
-   Action instead, where those rules do not apply.
-
-   Setup steps are in README.md. FLOW_URL below is an alternative for
-   anyone who would rather use Power Automate than the Action.
+   CONFIGURATION
+   The page reads data.json, which a GitHub Action rebuilds from the
+   OneDrive workbook on a schedule. See README.md.
    ============================================================ */
 var DATA_URL = "data.json";
-var AUTO_REFRESH_MINUTES = 10;   // re-check data.json on a timer. 0 turns it off.
-
-var FLOW_URL = "";               // optional Power Automate endpoint, tried before data.json
+var AUTO_REFRESH_MINUTES = 10;
+var FLOW_URL = "";
 var FLOW_METHOD = "POST";
-var SHEET_MAIN = "EWO";
-var SHEET_FABRIC = "Fsum";
-var SHEET_SEW = "Ssum";
+var SHEET_MAIN = "EWO", SHEET_FABRIC = "Fsum", SHEET_SEW = "Ssum";
+
+/* Numeric columns that must never be added up: an order number is a label, and
+   a duration only makes sense as an average. */
+var ID_COLUMNS = ["EWO"];
+var AVERAGE_COLUMNS = ["fab st to pcd", "fab dur", "sew dur", "pcd to sew st", "Per Day InHouse"];
+
+/* Dimensions that get their own dropdown, when the workbook has them. */
+var FILTER_DIMENSIONS = ["Status", "Latest note", "Team", "Buyer", "Execution Unit", "Dept", "OrderDate duration"];
+
+/* Columns shown in the detail table before anyone changes the selection. */
+var DEFAULT_TABLE_COLUMNS = ["EWO", "Status", "Buyer", "Team", "Execution Unit", "Dept",
+  "Order Qty", "Fab Qty", "InHouse", "OutSide", "Order Bank Date", "Adjusted Fabric Start",
+  "Adjusted Fabric End", "Adjusted PCD", "Adjusted sew start", "Adjusted sew end",
+  "fab dur", "sew dur", "Latest note"];
 /* ============================================================ */
 
 var charts = {};
-var allRows = [];
-var lastLoader = null;
-var refreshTimer = null;
+var HEADERS = [];
+var COLTYPE = {};
+var COLEMPTY = {};
+var IDX = {};
+var ROWS = [];
+var FSUM = [], SSUM = [];
+var visibleCols = [];
+var filtered = [];
+var activeAlert = null;
+var sortCol = null, sortDir = 1;
+var pivotSort = "Order Qty", pivotDir = -1;
+var page = 0;
+var lastLoader = null, refreshTimer = null, sourceLabel = "";
 
 var els = {};
-["refreshBtn","statusDot","statusText","fileLabel","loadingState","dashboard",
- "statsRow","dataTable","errorBox","searchInput","statusFilter","buyerFilter"
+["fileLabel","statusDot","statusText","refreshBtn","csvBtn","loadingState","dashboard","errorBox",
+ "filterGrid","searchInput","dateField","dateFieldWrap","dateFrom","dateTo","resetBtn","filterSummary",
+ "activeChips","kpiRow","alertRow","pivotTable","dataTable","groupBy","colChooser","prevPage",
+ "nextPage","pageInfo","pageSize","detailHint"
 ].forEach(function(id){ els[id] = document.getElementById(id); });
 
+/* ---------- helpers ---------- */
 function esc(v){
   return String(v == null ? "" : v)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function showError(html){ els.errorBox.innerHTML = '<div class="error">' + html + '</div>'; }
 function clearError(){ els.errorBox.innerHTML = ""; }
-function setStatus(text, cls){
-  els.statusText.textContent = text;
-  els.statusDot.className = "dot" + (cls ? " " + cls : "");
+function setStatus(t, c){ els.statusText.textContent = t; els.statusDot.className = "dot" + (c ? " " + c : ""); }
+function fmtInt(n){ return Math.round(n || 0).toLocaleString(); }
+function fmt1(n){ return (Math.round((n || 0) * 10) / 10).toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1}); }
+
+var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* Dates arrive as ISO text and are kept at UTC midnight, so the calendar day
+   never shifts with the reader's time zone. */
+function parseDate(v){
+  if(typeof v !== "string") return null;
+  var m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return null;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3]);
 }
+function fmtDate(ms){
+  if(ms == null) return "";
+  var d = new Date(ms);
+  return d.getUTCDate() + " " + MONTH_ABBR[d.getUTCMonth()] + " " + String(d.getUTCFullYear()).slice(2);
+}
+function monthKey(ms){
+  var d = new Date(ms);
+  return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0");
+}
+function monthLabel(key){
+  var p = key.split("-");
+  return MONTH_ABBR[+p[1] - 1] + " " + p[0].slice(2);
+}
+function toNum(v){
+  if(typeof v === "number") return isFinite(v) ? v : null;
+  if(typeof v === "string" && v.trim() !== "" && !isNaN(v)) return parseFloat(v);
+  return null;
+}
+var TODAY = (function(){ var n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); })();
+var DAY = 86400000;
+
+function raw(row, name){ var i = IDX[name]; return i == null ? null : row[i]; }
+function num(row, name){ return toNum(raw(row, name)); }
+function dat(row, name){ return parseDate(raw(row, name)); }
+function txt(row, name){ var v = raw(row, name); return v == null ? "" : String(v).trim(); }
 
 /* ============================================================
-   Reading the flow response
-
-   "List rows present in a table" returns an array of objects. This
-   flattens any such array into the rows-of-arrays shape the rest of
-   the page expects, using the first object's keys as the header row
-   and dropping the connector's own bookkeeping columns.
+   Loading
    ============================================================ */
 function toMatrix(input){
   if(!Array.isArray(input) || input.length === 0) return [];
   if(Array.isArray(input[0])) return input;
-  var keys = Object.keys(input[0]).filter(function(k){
-    return k.charAt(0) !== "@" && k !== "ItemInternalId";
-  });
-  return [keys].concat(input.map(function(o){
-    return keys.map(function(k){ return o[k]; });
-  }));
+  var keys = Object.keys(input[0]).filter(function(k){ return k.charAt(0) !== "@" && k !== "ItemInternalId"; });
+  return [keys].concat(input.map(function(o){ return keys.map(function(k){ return o[k]; }); }));
 }
-
-function normaliseBundle(raw){
-  if(Array.isArray(raw)) return { EWO: toMatrix(raw), Fsum: [], Ssum: [] };
-  if(raw && Array.isArray(raw.value)) return { EWO: toMatrix(raw.value), Fsum: [], Ssum: [] };
+function normaliseBundle(payload){
+  if(Array.isArray(payload)) return { EWO: toMatrix(payload), Fsum: [], Ssum: [] };
+  if(payload && Array.isArray(payload.value)) return { EWO: toMatrix(payload.value), Fsum: [], Ssum: [] };
   function pick(name){
-    var key = Object.keys(raw || {}).find(function(k){ return k.toLowerCase() === name.toLowerCase(); });
+    var key = Object.keys(payload || {}).find(function(k){ return k.toLowerCase() === name.toLowerCase(); });
     if(!key) return [];
-    var v = raw[key];
+    var v = payload[key];
     if(v && !Array.isArray(v) && Array.isArray(v.value)) v = v.value;
     return toMatrix(v);
   }
   return { EWO: pick(SHEET_MAIN), Fsum: pick(SHEET_FABRIC), Ssum: pick(SHEET_SEW) };
 }
-
-/* The commonest setup mistake is pasting the workbook's own OneDrive address
-   here. That address is used inside the flow, not by this page, and a browser
-   is not allowed to call SharePoint from another site. Catch it by name so the
-   message says so, rather than reporting a bare network failure. */
-function looksLikeFileLink(url){
-  return /sharepoint\.com|onedrive\.live\.com|1drv\.ms/i.test(url);
-}
-
-async function loadFromFlow(){
-  if(looksLikeFileLink(FLOW_URL)){
-    throw new Error("FLOW_URL currently holds the workbook's own OneDrive address. That is not "
-      + "what goes here. The workbook address is used inside the flow, on the Excel action. "
-      + "FLOW_URL must be the address Power Automate shows on the trigger \"When an HTTP request "
-      + "is received\". It contains logic.azure.com and ends with a long sig= value. "
-      + "See Step 2 in README.md.");
-  }
-
-  var res;
-  try{
-    res = await fetch(FLOW_URL, {
-      method: FLOW_METHOD,
-      headers: { "Accept": "application/json" }
-    });
-  }catch(e){
-    throw new Error("The browser could not reach the flow. Check that FLOW_URL was pasted "
-      + "in full, including everything after the question mark.");
-  }
-
-  if(res.status === 401 || res.status === 403){
-    throw new Error("The flow rejected the request (" + res.status + "). The signature in "
-      + "FLOW_URL is wrong or incomplete. Copy the whole URL from the trigger again.");
-  }
-  if(res.status === 405){
-    throw new Error("The flow refused this HTTP method. Either set FLOW_METHOD to \"GET\" "
-      + "and set the trigger's Method to GET, or leave both at POST.");
-  }
-  if(res.status === 202){
-    throw new Error("The flow accepted the call but returned no data, which means it has no "
-      + "Response action. Add one and set its body to the rows.");
-  }
-  if(!res.ok){
-    var body = "";
-    try{ body = (await res.text()).slice(0, 200); }catch(e){}
-    throw new Error("The flow answered " + res.status + " " + esc(res.statusText) + ". " + esc(body));
-  }
-
-  var payload;
-  try{
-    payload = await res.json();
-  }catch(e){
-    throw new Error("The flow did not return JSON. Check that the Response action's body is "
-      + "set to the rows and that its Content-Type is application/json.");
-  }
-  return normaliseBundle(payload);
-}
-
 async function loadFromJson(){
   var res = await fetch(DATA_URL + "?t=" + Date.now(), { cache: "no-store" });
   if(!res.ok) throw new Error(res.status + " " + res.statusText);
   return normaliseBundle(await res.json());
 }
+async function loadFromFlow(){
+  var res = await fetch(FLOW_URL, { method: FLOW_METHOD, headers: { "Accept": "application/json" } });
+  if(!res.ok) throw new Error("The flow answered " + res.status + " " + res.statusText + ".");
+  return normaliseBundle(await res.json());
+}
 
-/* ============================================================
-   Orchestration
-   ============================================================ */
 async function run(loader, label, opts){
   opts = opts || {};
   if(!opts.quiet){ clearError(); setStatus("Loading...", "busy"); }
   els.refreshBtn.disabled = true;
   try{
     var bundle = await loader();
-    if(!bundle.EWO || bundle.EWO.length === 0){
-      throw new Error("The flow returned no rows. Check that the Excel action points at the "
-        + "right table, and that pagination is switched on so it returns more than 256 rows.");
-    }
-    render(bundle);
+    if(!bundle.EWO || bundle.EWO.length < 2) throw new Error("The data file contained no orders.");
+    ingest(bundle);
     lastLoader = loader;
-    els.fileLabel.textContent = label;
+    sourceLabel = label;
+    els.fileLabel.textContent = label + "  ·  " + ROWS.length.toLocaleString()
+      + " orders  ·  " + HEADERS.length + " columns";
     els.loadingState.style.display = "none";
     els.dashboard.style.display = "block";
     clearError();
     setStatus("Updated " + new Date().toLocaleTimeString(), "live");
     els.refreshBtn.disabled = false;
-    startAutoRefresh();
+    if(refreshTimer) clearInterval(refreshTimer);
+    if(AUTO_REFRESH_MINUTES){
+      refreshTimer = setInterval(function(){ run(lastLoader, sourceLabel, { quiet: true }); },
+                                 AUTO_REFRESH_MINUTES * 60000);
+    }
     return true;
   }catch(e){
     if(opts.quiet){
-      // A failed background refresh must not wipe data that is already on screen.
       setStatus("Refresh failed, showing older data", "err");
       els.refreshBtn.disabled = false;
     }else{
@@ -369,239 +472,565 @@ async function run(loader, label, opts){
   }
 }
 
-function startAutoRefresh(){
-  if(refreshTimer) clearInterval(refreshTimer);
-  if(!AUTO_REFRESH_MINUTES || !lastLoader) return;
-  refreshTimer = setInterval(function(){
-    run(lastLoader, els.fileLabel.textContent, { quiet: true });
-  }, AUTO_REFRESH_MINUTES * 60000);
+/* ============================================================
+   Ingest
+   ============================================================ */
+function ingest(bundle){
+  var rows = bundle.EWO;
+  var headerIdx = findHeaderRow(rows);
+  HEADERS = rows[headerIdx].map(function(h, i){
+    return (h == null || String(h).trim() === "") ? "Column " + (i + 1) : String(h).trim();
+  });
+  IDX = {};
+  HEADERS.forEach(function(h, i){ if(IDX[h] == null) IDX[h] = i; });
+
+  var idIdx = IDX["EWO"];
+  ROWS = rows.slice(headerIdx + 1).filter(function(r){
+    return r && idIdx != null && r[idIdx] != null && r[idIdx] !== "";
+  });
+
+  classifyColumns();
+  FSUM = bundle.Fsum || [];
+  SSUM = bundle.Ssum || [];
+
+  buildFilters();
+  buildColumnChooser();
+  buildGroupBy();
+  activeAlert = null;
+  sortCol = null;
+  page = 0;
+  applyFilters();
+  renderWorkbookMonthly();
 }
 
-function render(bundle){
-  parseEwoSheet(bundle.EWO);
-  renderMonthly(bundle.Fsum, "fabricChart", "Fabric qty");
-  renderMonthly(bundle.Ssum, "sewChart", "Sewing hours");
+function findHeaderRow(rows){
+  for(var i = 0; i < Math.min(rows.length, 10); i++){
+    var low = (rows[i] || []).map(function(v){ return (v == null ? "" : String(v)).trim().toLowerCase(); });
+    if(low.indexOf("status") !== -1 && low.indexOf("buyer") !== -1 && low.indexOf("ewo") !== -1) return i;
+  }
+  throw new Error('No header row containing "EWO", "Status" and "Buyer" was found.');
+}
+
+/* A column counts as dated or numeric when most of its filled cells look that
+   way. Detecting rather than hard-coding means the dashboard survives columns
+   being added, renamed or reordered in the workbook. */
+function classifyColumns(){
+  HEADERS.forEach(function(name, i){
+    var filled = 0, dates = 0, nums = 0;
+    for(var r = 0; r < ROWS.length; r++){
+      var v = ROWS[r][i];
+      if(v == null || v === "") continue;
+      filled++;
+      if(parseDate(v) != null) dates++;
+      else if(toNum(v) != null) nums++;
+    }
+    COLEMPTY[name] = (filled === 0);
+    if(filled === 0) COLTYPE[name] = "text";
+    else if(dates / filled >= 0.6) COLTYPE[name] = "date";
+    else if(nums / filled >= 0.6) COLTYPE[name] = "number";
+    else COLTYPE[name] = "text";
+  });
+  ID_COLUMNS.forEach(function(n){ if(COLTYPE[n]) COLTYPE[n] = "text"; });
+}
+
+function isSummable(name){
+  return COLTYPE[name] === "number"
+    && ID_COLUMNS.indexOf(name) === -1
+    && AVERAGE_COLUMNS.indexOf(name) === -1;
+}
+function isAveraged(name){
+  return COLTYPE[name] === "number" && AVERAGE_COLUMNS.indexOf(name) !== -1;
 }
 
 /* ============================================================
-   Parsing
+   Filters
    ============================================================ */
-function findHeaderRow(rows, mustContain){
-  for(var i = 0; i < Math.min(rows.length, 10); i++){
-    var rowVals = (rows[i] || []).map(function(v){
-      return (v == null ? "" : String(v)).trim().toLowerCase();
+var dimSelects = {};
+
+function buildFilters(){
+  Object.keys(dimSelects).forEach(function(k){
+    var wrap = dimSelects[k].parentNode;
+    if(wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+  });
+  dimSelects = {};
+
+  FILTER_DIMENSIONS.forEach(function(name){
+    if(IDX[name] == null || COLEMPTY[name]) return;
+    var values = Array.from(new Set(ROWS.map(function(r){ return txt(r, name); })
+      .filter(function(v){ return v !== ""; }))).sort();
+    if(values.length < 2) return;
+
+    var wrap = document.createElement("div");
+    wrap.className = "fld";
+    var id = "f_" + name.replace(/\W+/g, "_");
+    wrap.innerHTML = '<label for="' + id + '">' + esc(name) + '</label>'
+      + '<select id="' + id + '"><option value="">All</option>'
+      + values.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join("")
+      + '</select>';
+    els.filterGrid.insertBefore(wrap, els.dateFieldWrap);
+    var sel = wrap.querySelector("select");
+    sel.addEventListener("change", function(){ page = 0; applyFilters(); });
+    dimSelects[name] = sel;
+  });
+
+  var dateCols = HEADERS.filter(function(h){ return COLTYPE[h] === "date" && !COLEMPTY[h]; });
+  els.dateField.innerHTML = '<option value="">No date filter</option>'
+    + dateCols.map(function(h){ return '<option value="' + esc(h) + '">' + esc(h) + '</option>'; }).join("");
+}
+
+function currentFilters(){
+  var f = { q: els.searchInput.value.trim().toLowerCase(), dims: {},
+            dateField: els.dateField.value, from: null, to: null };
+  Object.keys(dimSelects).forEach(function(k){ if(dimSelects[k].value) f.dims[k] = dimSelects[k].value; });
+  if(els.dateFrom.value) f.from = parseDate(els.dateFrom.value);
+  if(els.dateTo.value) f.to = parseDate(els.dateTo.value);
+  return f;
+}
+
+/* Everything except the alert cards, so the cards can show counts that stay
+   meaningful while one of them is switched on. */
+function passesBaseFilters(r, f, dimKeys){
+  for(var i = 0; i < dimKeys.length; i++){
+    if(txt(r, dimKeys[i]) !== f.dims[dimKeys[i]]) return false;
+  }
+  if(f.dateField && (f.from != null || f.to != null)){
+    var d = dat(r, f.dateField);
+    if(d == null) return false;
+    if(f.from != null && d < f.from) return false;
+    if(f.to != null && d > f.to) return false;
+  }
+  if(f.q){
+    var hay = "";
+    for(var c = 0; c < r.length; c++){ var v = r[c]; if(v != null) hay += String(v) + " "; }
+    if(hay.toLowerCase().indexOf(f.q) === -1) return false;
+  }
+  return true;
+}
+
+var baseFiltered = [];
+
+function applyFilters(){
+  var f = currentFilters();
+  var dimKeys = Object.keys(f.dims);
+  baseFiltered = ROWS.filter(function(r){ return passesBaseFilters(r, f, dimKeys); });
+  filtered = activeAlert
+    ? baseFiltered.filter(ALERTS_BY_KEY[activeAlert].test)
+    : baseFiltered.slice();
+  if(sortCol) sortFiltered();
+  renderAll();
+}
+
+function sortFiltered(){
+  var name = sortCol, type = COLTYPE[name];
+  filtered.sort(function(a, b){
+    var x, y;
+    if(type === "date"){ x = dat(a, name); y = dat(b, name); }
+    else if(type === "number"){ x = num(a, name); y = num(b, name); }
+    else { x = txt(a, name).toLowerCase(); y = txt(b, name).toLowerCase(); }
+    var xe = (x == null || x === ""), ye = (y == null || y === "");
+    if(xe && ye) return 0;
+    if(xe) return 1;            // blanks always sink, whichever way we sort
+    if(ye) return -1;
+    if(x < y) return -sortDir;
+    if(x > y) return sortDir;
+    return 0;
+  });
+}
+
+function resetAll(){
+  els.searchInput.value = "";
+  Object.keys(dimSelects).forEach(function(k){ dimSelects[k].value = ""; });
+  els.dateField.value = ""; els.dateFrom.value = ""; els.dateTo.value = "";
+  activeAlert = null; sortCol = null; page = 0;
+  applyFilters();
+}
+
+/* ============================================================
+   Alerts: the planning problems worth acting on
+   ============================================================ */
+/* These were chosen by measuring the real workbook rather than guessing. A rule
+   that fires on a third of all orders is noise, not a warning, so the ones kept
+   here are the sequences that genuinely cost money or block planning.
+
+   Note that fabric ending after PCD is deliberately NOT flagged: fabric arrives
+   in batches and cutting normally starts partway through the delivery window.
+   Nearly a third of orders look like that, and every one of them is fine. */
+var ALERTS = [
+  { key: "fabAfterFrd", sev: "high", title: "Fabric past Max FRD",
+    detail: "Fabric ends after the latest agreed requirement date",
+    test: function(r){ var a = dat(r,"Adjusted Fabric End"), b = dat(r,"Max FRD");
+                       return a != null && b != null && a > b; } },
+
+  { key: "sequenceError", sev: "high", title: "Impossible date order",
+    detail: "Milestones contradict each other, so the plan cannot be right",
+    test: function(r){
+      var ob = dat(r,"Order Bank Date"), pcd = dat(r,"Adjusted PCD"),
+          fs = dat(r,"Adjusted Fabric Start"), ss = dat(r,"Adjusted sew start"),
+          se = dat(r,"Adjusted sew end");
+      if(pcd != null && ob != null && pcd < ob) return true;   // cut before the order was banked
+      if(ss != null && pcd != null && ss < pcd) return true;   // sewing before cutting
+      if(fs != null && pcd != null && fs > pcd) return true;   // no fabric at all when cutting starts
+      if(se != null && ss != null && se < ss) return true;     // sewing ends before it begins
+      return false; } },
+
+  { key: "fabAfterSew", sev: "mid", title: "Fabric still arriving at sew start",
+    detail: "Adjusted Fabric End is later than Adjusted sew start",
+    test: function(r){ var a = dat(r,"Adjusted Fabric End"), b = dat(r,"Adjusted sew start");
+                       return a != null && b != null && a > b; } },
+
+  { key: "fabAfterMinFrd", sev: "mid", title: "Fabric starts after Min FRD",
+    detail: "Fabric begins later than the earliest date it was needed",
+    test: function(r){ var a = dat(r,"Adjusted Fabric Start"), b = dat(r,"Min FRD");
+                       return a != null && b != null && a > b; } },
+
+  { key: "unlockedSoon", sev: "mid", title: "Unlocked, fabric within 30 days",
+    detail: "Fabric starts soon but the order is not confirmed",
+    test: function(r){ if(txt(r,"Status").toLowerCase().indexOf("locked") === 0) return false;
+                       var d = dat(r,"Adjusted Fabric Start");
+                       return d != null && d >= TODAY && d <= TODAY + 30 * DAY; } },
+
+  { key: "onHold", sev: "mid", title: "On hold or blocked",
+    detail: "Needs a decision before planning can move",
+    test: function(r){ var s = txt(r,"Status").toLowerCase();
+                       return s.indexOf("hold") !== -1 || s.indexOf("block") !== -1; } },
+
+  { key: "noPcd", sev: "mid", title: "No PCD set",
+    detail: "Adjusted PCD is blank, so the order cannot be scheduled",
+    test: function(r){ return dat(r,"Adjusted PCD") == null
+                          && txt(r,"Status").toLowerCase().indexOf("cancel") === -1; } },
+
+  { key: "pcdSoon", sev: "low", title: "PCD within 30 days",
+    detail: "Cutting is due to start inside the next month",
+    test: function(r){ var d = dat(r,"Adjusted PCD");
+                       return d != null && d >= TODAY && d <= TODAY + 30 * DAY; } },
+
+  { key: "longFab", sev: "low", title: "Fabric window over 45 days",
+    detail: "Unusually long fabric lead time, worth a second look",
+    test: function(r){ var v = num(r,"fab dur"); return v != null && v > 45; } }
+];
+var ALERTS_BY_KEY = {};
+ALERTS.forEach(function(a){ ALERTS_BY_KEY[a.key] = a; });
+
+function renderAlerts(){
+  els.alertRow.innerHTML = "";
+  ALERTS.forEach(function(a){
+    var hits = baseFiltered.filter(a.test);
+    var qty = hits.reduce(function(s, r){ return s + (num(r, "Order Qty") || 0); }, 0);
+    var btn = document.createElement("button");
+    btn.className = "alert sev-" + a.sev + (activeAlert === a.key ? " on" : "");
+    btn.innerHTML = '<span class="n">' + fmtInt(hits.length) + '</span>'
+      + '<span class="t">' + esc(a.title) + '</span>'
+      + '<span class="d">' + esc(a.detail) + '<br/>' + fmtInt(qty) + ' pcs</span>';
+    btn.addEventListener("click", function(){
+      activeAlert = (activeAlert === a.key) ? null : a.key;
+      page = 0;
+      applyFilters();
     });
-    var ok = mustContain.every(function(m){ return rowVals.indexOf(m) !== -1; });
-    if(ok) return i;
-  }
-  return -1;
-}
-
-function toNum(v){
-  var n = typeof v === "number" ? v : parseFloat(v);
-  return isNaN(n) ? 0 : n;
-}
-
-/* Every branch ends at a UTC midnight and prints in UTC, so the calendar day
-   never shifts with the reader's time zone. The Excel connector may hand back
-   a date as a number, as a numeric string, or as ISO text, so all three are
-   handled here. */
-function fmtParts(d){
-  return d.toLocaleDateString(undefined, { timeZone: "UTC" });
-}
-function serialToDate(n){
-  return new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000);
-}
-function fmtDate(v){
-  if(v == null || v === "") return "";
-
-  if(typeof v === "number" && v > 20000 && v < 60000) return fmtParts(serialToDate(v));
-
-  var s = String(v).trim();
-
-  // Some cells hold a bare time such as "00:00:00" where a date was meant.
-  // That is not a date, so show nothing rather than a meaningless clock value.
-  if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return "";
-
-  if(/^\d+(\.\d+)?$/.test(s)){
-    var n = parseFloat(s);
-    if(n > 20000 && n < 60000) return fmtParts(serialToDate(n));
-  }
-
-  var iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(iso) return fmtParts(new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3])));
-
-  if(v instanceof Date){
-    if(isNaN(v.getTime())) return "";
-    var wall = v.getTime() - v.getTimezoneOffset() * 60000;
-    return fmtParts(new Date(Math.round(wall / 86400000) * 86400000));
-  }
-
-  var d = new Date(s);
-  if(isNaN(d.getTime())) return s;
-  return fmtParts(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())));
-}
-
-function parseEwoSheet(rows){
-  var headerRowIdx = findHeaderRow(rows, ["status", "buyer"]);
-  if(headerRowIdx === -1){
-    throw new Error('No header row containing both "Status" and "Buyer" was found. Check that '
-      + 'the Excel table in the flow is the EWO table and that its header row is intact.');
-  }
-
-  var headers = rows[headerRowIdx];
-  var headerMap = {};
-  headers.forEach(function(h, i){ if(h) headerMap[String(h).trim().toLowerCase()] = i; });
-  function col(name){ return headerMap[name.toLowerCase()]; }
-
-  var idIdx = col("EWO");
-  if(idIdx == null) throw new Error('A header row was found, but it has no "EWO" column.');
-
-  var dataRows = rows.slice(headerRowIdx + 1).filter(function(r){
-    return r && r[idIdx] != null && r[idIdx] !== "";
+    els.alertRow.appendChild(btn);
   });
-
-  allRows = dataRows.map(function(r){
-    return {
-      ewo: r[col("EWO")],
-      status: r[col("Status")] == null ? "Unknown" : r[col("Status")],
-      note: col("Latest note") != null ? r[col("Latest note")] : "",
-      team: col("Team") != null && r[col("Team")] != null ? r[col("Team")] : "Unknown",
-      buyer: col("Buyer") != null && r[col("Buyer")] != null ? r[col("Buyer")] : "Unknown",
-      dept: col("Dept") != null ? r[col("Dept")] : "",
-      execUnit: col("Execution Unit") != null && r[col("Execution Unit")] != null ? r[col("Execution Unit")] : "Unknown",
-      orderQty: toNum(r[col("Order Qty")]),
-      fabQty: toNum(r[col("Fab Qty")]),
-      orderBankDate: col("Order Bank Date") != null ? r[col("Order Bank Date")] : null
-    };
-  });
-
-  renderStats();
-  renderBreakdown("status", "statusChart", "Status");
-  renderBreakdown("execUnit", "execChart", "Execution Unit");
-  renderBreakdown("team", "teamChart", "Team");
-  renderTopBuyers();
-  renderTable(allRows);
-  populateFilters();
 }
 
 /* ============================================================
    Rendering
    ============================================================ */
-function renderStats(){
-  els.statsRow.innerHTML = "";
-  var totalOrderQty = allRows.reduce(function(s, r){ return s + r.orderQty; }, 0);
-  var totalFabQty = allRows.reduce(function(s, r){ return s + r.fabQty; }, 0);
-  var distinctBuyers = new Set(allRows.map(function(r){ return r.buyer; })).size;
-  var locked = allRows.filter(function(r){
-    return String(r.status).toLowerCase().indexOf("locked") === 0;
-  }).length;
-
-  addStat("Total EWOs", allRows.length.toLocaleString());
-  addStat("Locked", locked.toLocaleString());
-  addStat("Total Order Qty", Math.round(totalOrderQty).toLocaleString());
-  addStat("Total Fab Qty", Math.round(totalFabQty).toLocaleString());
-  addStat("Buyers", distinctBuyers);
+function sum(rowsIn, name){
+  var t = 0;
+  for(var i = 0; i < rowsIn.length; i++){ var v = num(rowsIn[i], name); if(v != null) t += v; }
+  return t;
+}
+function avg(rowsIn, name){
+  var t = 0, n = 0;
+  for(var i = 0; i < rowsIn.length; i++){ var v = num(rowsIn[i], name); if(v != null){ t += v; n++; } }
+  return n ? t / n : 0;
 }
 
-function addStat(label, value){
-  var div = document.createElement("div");
-  div.className = "stat";
-  div.innerHTML = '<div class="label">' + esc(label) + '</div><div class="value">' + esc(value) + '</div>';
-  els.statsRow.appendChild(div);
+function renderAll(){
+  renderFilterSummary();
+  renderKpis();
+  renderAlerts();
+  renderDimensionCharts();
+  renderMonthCharts();
+  renderPivot();
+  renderTable();
 }
 
-function countBy(field){
-  var map = {};
-  allRows.forEach(function(r){
-    var key = String(r[field] == null ? "Unknown" : r[field]).trim() || "Unknown";
-    map[key] = (map[key] || 0) + 1;
+function renderFilterSummary(){
+  var pct = ROWS.length ? Math.round(1000 * filtered.length / ROWS.length) / 10 : 0;
+  els.filterSummary.textContent = "Showing " + filtered.length.toLocaleString()
+    + " of " + ROWS.length.toLocaleString() + " orders (" + pct + "%)";
+
+  var chips = [];
+  Object.keys(dimSelects).forEach(function(k){
+    if(dimSelects[k].value) chips.push(k + ": " + dimSelects[k].value);
   });
-  return Object.keys(map).map(function(k){ return [k, map[k]]; })
-    .sort(function(a, b){ return b[1] - a[1]; });
+  if(els.searchInput.value.trim()) chips.push('search "' + els.searchInput.value.trim() + '"');
+  if(els.dateField.value && (els.dateFrom.value || els.dateTo.value)){
+    chips.push(els.dateField.value + " " + (els.dateFrom.value || "any") + " to " + (els.dateTo.value || "any"));
+  }
+  if(activeAlert) chips.push(ALERTS_BY_KEY[activeAlert].title);
+  els.activeChips.innerHTML = chips.map(function(c){ return '<span class="chip">' + esc(c) + '</span>'; }).join(" ");
 }
 
-function destroyChart(id){
-  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+function renderKpis(){
+  var orderQty = sum(filtered, "Order Qty");
+  var fabQty = sum(filtered, "Fab Qty");
+  var inHouse = sum(filtered, "InHouse");
+  var outSide = sum(filtered, "OutSide");
+  var frHour = sum(filtered, "FR hour");
+  var locked = filtered.filter(function(r){ return txt(r,"Status").toLowerCase().indexOf("locked") === 0; }).length;
+  var buyers = new Set(filtered.map(function(r){ return txt(r,"Buyer"); })).size;
+  var sourced = inHouse + outSide;
+  var inPct = sourced ? Math.round(100 * inHouse / sourced) : 0;
+
+  var tiles = [
+    ["Orders", fmtInt(filtered.length), buyers + " buyers"],
+    ["Order Qty", fmtInt(orderQty), "pieces"],
+    ["Fab Qty", fmtInt(fabQty), "fabric units"],
+    ["In-house share", sourced ? inPct + "%" : "n/a", sourced ? fmtInt(inHouse) + " of " + fmtInt(sourced) : "no split recorded"],
+    ["Locked", fmtInt(locked), filtered.length ? Math.round(100 * locked / filtered.length) + "% of shown" : ""],
+    ["Sewing hours", fmtInt(frHour), "FR hour total"],
+    ["Avg fabric days", fmt1(avg(filtered, "fab dur")), "Adjusted fabric window"],
+    ["Avg sewing days", fmt1(avg(filtered, "sew dur")), "Adjusted sew window"]
+  ];
+  els.kpiRow.innerHTML = tiles.map(function(t){
+    return '<div class="kpi"><div class="label">' + esc(t[0]) + '</div><div class="value">'
+      + esc(t[1]) + '</div><div class="foot">' + esc(t[2]) + '</div></div>';
+  }).join("");
 }
 
+var PALETTE = ["#2B6E5E","#C7511F","#B98900","#3B6FA8","#6B7280","#A85CC1","#4E9E7E","#D98E3B","#8FA6D6","#7A9E4B"];
 var MONO = { family: "IBM Plex Mono", size: 11 };
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
 
-function renderBreakdown(field, canvasId, label){
-  var entries = countBy(field);
-  var palette = ["#2B6E5E", "#C7511F", "#B98900", "#6B7280", "#8FA6D6", "#A85CC1", "#4E9E7E", "#D98E3B"];
+function groupSum(rowsIn, dim, measure){
+  if(IDX[dim] == null) return [];
+  var m = {};
+  rowsIn.forEach(function(r){
+    var k = txt(r, dim) || "(blank)";
+    m[k] = (m[k] || 0) + (measure ? (num(r, measure) || 0) : 1);
+  });
+  return Object.keys(m).map(function(k){ return [k, m[k]]; }).sort(function(a, b){ return b[1] - a[1]; });
+}
+
+function barChart(canvasId, entries, label){
   destroyChart(canvasId);
-  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+  var el = document.getElementById(canvasId);
+  if(!el || entries.length === 0) return;
+  charts[canvasId] = new Chart(el, {
     type: "bar",
-    data: {
-      labels: entries.map(function(e){ return e[0]; }),
-      datasets: [{
-        label: label,
-        data: entries.map(function(e){ return e[1]; }),
-        backgroundColor: entries.map(function(_, i){ return palette[i % palette.length]; })
-      }]
-    },
+    data: { labels: entries.map(function(e){ return e[0]; }),
+            datasets: [{ label: label, data: entries.map(function(e){ return e[1]; }),
+                         backgroundColor: entries.map(function(_, i){ return PALETTE[i % PALETTE.length]; }) }] },
     options: {
       indexAxis: "y", responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: { legend: { display: false },
+                 tooltip: { callbacks: { label: function(c){ return label + ": " + fmtInt(c.parsed.x); } } } },
       scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: MONO } } }
     }
   });
 }
 
-function renderTopBuyers(){
-  var entries = countBy("buyer").slice(0, 12);
-  destroyChart("buyerChart");
-  charts.buyerChart = new Chart(document.getElementById("buyerChart"), {
-    type: "bar",
-    data: {
-      labels: entries.map(function(e){ return e[0]; }),
-      datasets: [{ label: "Orders", data: entries.map(function(e){ return e[1]; }), backgroundColor: "#2B6E5E" }]
-    },
-    options: {
-      indexAxis: "y", responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: { family: "IBM Plex Mono", size: 10 } } } }
-    }
-  });
+function renderDimensionCharts(){
+  barChart("statusChart", groupSum(filtered, "Status", null), "Orders");
+  barChart("execChart", groupSum(filtered, "Execution Unit", "Order Qty"), "Order Qty");
+  barChart("teamChart", groupSum(filtered, "Team", "Order Qty"), "Order Qty");
+  barChart("buyerChart", groupSum(filtered, "Buyer", "Order Qty").slice(0, 12), "Order Qty");
+
+  var inHouse = sum(filtered, "InHouse"), outSide = sum(filtered, "OutSide");
+  destroyChart("sourceChart");
+  var el = document.getElementById("sourceChart");
+  if(el && inHouse + outSide > 0){
+    charts.sourceChart = new Chart(el, {
+      type: "doughnut",
+      data: { labels: ["In-house", "Outside"],
+              datasets: [{ data: [inHouse, outSide], backgroundColor: ["#2B6E5E", "#C7511F"] }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom", labels: { font: MONO } },
+          tooltip: { callbacks: { label: function(c){
+            var tot = inHouse + outSide;
+            return c.label + ": " + fmtInt(c.parsed) + " (" + Math.round(100 * c.parsed / tot) + "%)"; } } } } }
+    });
+  }
 }
 
-function renderMonthly(rows, canvasId, label){
-  destroyChart(canvasId);
-  if(!rows || rows.length === 0) return;
-  var monthRe = /^[A-Za-z]+\s?\d{2}$/;
-  var seen = new Map();
-  rows.forEach(function(r){
-    if(!r) return;
-    var m = r[0], v = r[1];
-    if(typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim())) v = parseFloat(v);
-    if(typeof m === "string" && monthRe.test(m.trim()) && typeof v === "number" && !seen.has(m.trim())){
-      seen.set(m.trim(), v);
-    }
+function monthSeries(dateCol, measure){
+  if(IDX[dateCol] == null) return { labels: [], values: [] };
+  var m = {};
+  filtered.forEach(function(r){
+    var d = dat(r, dateCol);
+    if(d == null) return;
+    var k = monthKey(d);
+    m[k] = (m[k] || 0) + (measure ? (num(r, measure) || 0) : 1);
   });
-  if(seen.size === 0) return;
-  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+  var keys = Object.keys(m).sort();
+  return { labels: keys.map(monthLabel), values: keys.map(function(k){ return m[k]; }) };
+}
+
+function lineChart(canvasId, series, label, colour, fill){
+  destroyChart(canvasId);
+  var el = document.getElementById(canvasId);
+  if(!el || series.labels.length === 0) return;
+  charts[canvasId] = new Chart(el, {
     type: "line",
-    data: {
-      labels: Array.from(seen.keys()),
-      datasets: [{
-        label: label,
-        data: Array.from(seen.values()),
-        borderColor: "#2B6E5E", backgroundColor: "#E7EFEC",
-        fill: true, tension: 0.25, pointRadius: 3
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: MONO } } }
-    }
+    data: { labels: series.labels,
+            datasets: [{ label: label, data: series.values, borderColor: colour,
+                         backgroundColor: fill, fill: true, tension: 0.25, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+                 tooltip: { callbacks: { label: function(c){ return label + ": " + fmtInt(c.parsed.y); } } } },
+      scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: MONO } } } }
   });
+}
+
+function renderMonthCharts(){
+  lineChart("pcdChart", monthSeries("Adjusted PCD", "Order Qty"), "Order Qty", "#2B6E5E", "#E7EFEC");
+  lineChart("fabMonthChart", monthSeries("Adjusted Fabric Start", "Fab Qty"), "Fab Qty", "#2B6E5E", "#E7EFEC");
+  lineChart("sewMonthChart", monthSeries("Adjusted sew start", "FR hour"), "FR hour", "#2B6E5E", "#E7EFEC");
+}
+
+/* Fsum and Ssum are already summarised inside the workbook, so they are shown
+   as they are and do not react to the filters. */
+function renderWorkbookMonthly(){
+  [["fabricChart", FSUM, "Fabric qty"], ["sewChart", SSUM, "Sewing hours"]].forEach(function(spec){
+    destroyChart(spec[0]);
+    var rows = spec[1] || [];
+    var monthRe = /^[A-Za-z]+\s?\d{2}$/;
+    var seen = new Map();
+    rows.forEach(function(r){
+      if(!r) return;
+      var m = r[0], v = r[1];
+      if(typeof v === "string" && v.trim() !== "" && !isNaN(v)) v = parseFloat(v);
+      if(typeof m === "string" && monthRe.test(m.trim()) && typeof v === "number" && !seen.has(m.trim())){
+        seen.set(m.trim(), v);
+      }
+    });
+    if(seen.size === 0) return;
+    var el = document.getElementById(spec[0]);
+    if(!el) return;
+    charts[spec[0]] = new Chart(el, {
+      type: "line",
+      data: { labels: Array.from(seen.keys()),
+              datasets: [{ label: spec[2], data: Array.from(seen.values()), borderColor: "#3B6FA8",
+                           backgroundColor: "#E6EDF5", fill: true, tension: 0.25, pointRadius: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+                   tooltip: { callbacks: { label: function(c){ return spec[2] + ": " + fmtInt(c.parsed.y); } } } },
+        scales: { x: { ticks: { font: MONO } }, y: { ticks: { font: MONO } } } }
+    });
+  });
+}
+
+/* ---------- summary grid ---------- */
+var PIVOT_MEASURES = [
+  { name: "Orders",      get: function(g){ return g.length; },        fmt: fmtInt },
+  { name: "Order Qty",   get: function(g){ return sum(g, "Order Qty"); }, fmt: fmtInt },
+  { name: "Fab Qty",     get: function(g){ return sum(g, "Fab Qty"); },   fmt: fmtInt },
+  { name: "In-house",    get: function(g){ return sum(g, "InHouse"); },   fmt: fmtInt },
+  { name: "Outside",     get: function(g){ return sum(g, "OutSide"); },   fmt: fmtInt },
+  { name: "FR hour",     get: function(g){ return sum(g, "FR hour"); },   fmt: fmtInt },
+  { name: "Avg fab dur", get: function(g){ return avg(g, "fab dur"); },   fmt: fmt1 },
+  { name: "Avg sew dur", get: function(g){ return avg(g, "sew dur"); },   fmt: fmt1 }
+];
+
+function buildGroupBy(){
+  var dims = FILTER_DIMENSIONS.filter(function(d){ return IDX[d] != null && !COLEMPTY[d]; });
+  if(dims.length === 0) dims = ["Buyer"];
+  els.groupBy.innerHTML = dims.map(function(d){
+    return '<option value="' + esc(d) + '"' + (d === "Buyer" ? " selected" : "") + '>' + esc(d) + '</option>';
+  }).join("");
+}
+
+function renderPivot(){
+  var dim = els.groupBy.value || "Buyer";
+  var groups = {};
+  filtered.forEach(function(r){
+    var k = txt(r, dim) || "(blank)";
+    (groups[k] = groups[k] || []).push(r);
+  });
+
+  var out = Object.keys(groups).map(function(k){
+    return { key: k, cells: PIVOT_MEASURES.map(function(m){ return m.get(groups[k]); }) };
+  });
+
+  if(pivotSort === "__key"){
+    out.sort(function(a, b){ return a.key.localeCompare(b.key) * pivotDir; });
+  }else{
+    var si = PIVOT_MEASURES.findIndex(function(m){ return m.name === pivotSort; });
+    if(si === -1) si = 1;
+    out.sort(function(a, b){ return (a.cells[si] - b.cells[si]) * pivotDir; });
+  }
+
+  function arrow(name){
+    return pivotSort === name ? ' <span class="arrow">' + (pivotDir < 0 ? "▼" : "▲") + '</span>' : "";
+  }
+
+  var head = '<thead><tr><th data-p="__key">' + esc(dim) + arrow("__key") + '</th>'
+    + PIVOT_MEASURES.map(function(m){
+        return '<th class="num" data-p="' + esc(m.name) + '">' + esc(m.name) + arrow(m.name) + '</th>';
+      }).join("") + '</tr></thead>';
+
+  var body = '<tbody>' + out.map(function(r){
+    return '<tr><td>' + esc(r.key) + '</td>'
+      + r.cells.map(function(v, i){ return '<td class="num">' + PIVOT_MEASURES[i].fmt(v) + '</td>'; }).join("")
+      + '</tr>';
+  }).join("") + '</tbody>';
+
+  var foot = '<tfoot><tr><td>Total, ' + out.length + ' groups</td>'
+    + PIVOT_MEASURES.map(function(m){ return '<td class="num">' + m.fmt(m.get(filtered)) + '</td>'; }).join("")
+    + '</tr></tfoot>';
+
+  els.pivotTable.innerHTML = out.length
+    ? head + body + foot
+    : '<tbody><tr><td class="empty-note">No orders match these filters.</td></tr></tbody>';
+
+  Array.prototype.forEach.call(els.pivotTable.querySelectorAll("th[data-p]"), function(th){
+    th.addEventListener("click", function(){
+      var p = th.getAttribute("data-p");
+      if(pivotSort === p){ pivotDir = -pivotDir; }
+      else { pivotSort = p; pivotDir = (p === "__key") ? 1 : -1; }
+      renderPivot();
+    });
+  });
+}
+
+/* ---------- detail table ---------- */
+function buildColumnChooser(){
+  visibleCols = HEADERS.filter(function(h){
+    return !COLEMPTY[h] && DEFAULT_TABLE_COLUMNS.indexOf(h) !== -1;
+  });
+  if(visibleCols.length === 0){
+    visibleCols = HEADERS.filter(function(h){ return !COLEMPTY[h]; }).slice(0, 12);
+  }
+
+  var emptyCount = HEADERS.filter(function(h){ return COLEMPTY[h]; }).length;
+  els.colChooser.innerHTML = HEADERS.map(function(h){
+    var checked = visibleCols.indexOf(h) !== -1 ? " checked" : "";
+    var cls = COLEMPTY[h] ? ' class="empty"' : "";
+    var note = COLEMPTY[h] ? " (empty)" : "";
+    return '<label' + cls + '><input type="checkbox" data-col="' + esc(h) + '"' + checked + ' />'
+      + '<span>' + esc(h) + esc(note) + '</span></label>';
+  }).join("");
+
+  Array.prototype.forEach.call(els.colChooser.querySelectorAll("input"), function(cb){
+    cb.addEventListener("change", function(){
+      var name = cb.getAttribute("data-col");
+      if(cb.checked){
+        // rebuild from HEADERS so columns keep their sheet order
+        var wanted = visibleCols.concat([name]);
+        visibleCols = HEADERS.filter(function(h){ return wanted.indexOf(h) !== -1; });
+      }else{
+        visibleCols = visibleCols.filter(function(h){ return h !== name; });
+      }
+      renderTable();
+    });
+  });
+
+  els.detailHint.textContent = "Click a heading to sort. The bottom row totals every filtered order, not "
+    + "only this page." + (emptyCount ? " " + emptyCount + " columns are empty in the workbook and start hidden." : "");
 }
 
 function statusBadge(status){
-  var s = String(status).toLowerCase();
-  var cls = "";
+  var s = String(status).toLowerCase(), cls = "";
   if(s.indexOf("locked") === 0) cls = "locked";
   else if(s.indexOf("hold") !== -1 || s.indexOf("block") !== -1) cls = "hold";
   else if(s.indexOf("tbc") !== -1 || s.indexOf("later") !== -1 || s.indexOf("pending") !== -1) cls = "tbc";
@@ -609,87 +1038,134 @@ function statusBadge(status){
   return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
 }
 
-function renderTable(rows){
-  var table = els.dataTable;
-  table.innerHTML = "";
-  var thead = document.createElement("thead");
-  thead.innerHTML = "<tr><th>EWO</th><th>Status</th><th>Buyer</th><th>Team</th><th>Execution Unit</th>"
-    + "<th>Order Qty</th><th>Fab Qty</th><th>Order Bank Date</th><th>Note</th></tr>";
-  table.appendChild(thead);
-  var tbody = document.createElement("tbody");
-  rows.slice(0, 300).forEach(function(r){
-    var tr = document.createElement("tr");
-    tr.innerHTML = "<td>" + esc(r.ewo) + "</td>"
-      + "<td>" + statusBadge(r.status) + "</td>"
-      + "<td>" + esc(r.buyer) + "</td>"
-      + "<td>" + esc(r.team) + "</td>"
-      + "<td>" + esc(r.execUnit) + "</td>"
-      + "<td>" + esc(Math.round(r.orderQty).toLocaleString()) + "</td>"
-      + "<td>" + esc(Math.round(r.fabQty).toLocaleString()) + "</td>"
-      + "<td>" + esc(fmtDate(r.orderBankDate)) + "</td>"
-      + "<td>" + esc(r.note) + "</td>";
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
+function cellHtml(r, name){
+  if(name === "Status") return statusBadge(txt(r, name));
+  var t = COLTYPE[name];
+  if(t === "date"){ var d = dat(r, name); return d == null ? esc(txt(r, name)) : esc(fmtDate(d)); }
+  if(t === "number"){ var v = num(r, name); return v == null ? "" : esc(fmtInt(v)); }
+  return esc(txt(r, name));
 }
 
-function populateFilters(){
-  var statuses = Array.from(new Set(allRows.map(function(r){ return String(r.status); }))).sort();
-  var buyers = Array.from(new Set(allRows.map(function(r){ return String(r.buyer); }))).sort();
-  function opts(list){
-    return list.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join("");
+function renderTable(){
+  var size = parseInt(els.pageSize.value, 10) || 100;
+  var pages = Math.max(1, Math.ceil(filtered.length / size));
+  if(page >= pages) page = pages - 1;
+  if(page < 0) page = 0;
+  var slice = filtered.slice(page * size, page * size + size);
+
+  function numCls(h){
+    return (COLTYPE[h] === "number" && ID_COLUMNS.indexOf(h) === -1) ? ' class="num"' : "";
   }
-  els.statusFilter.innerHTML = '<option value="">All statuses</option>' + opts(statuses);
-  els.buyerFilter.innerHTML = '<option value="">All buyers</option>' + opts(buyers);
-}
 
-function applyFilters(){
-  var q = els.searchInput.value.trim().toLowerCase();
-  var statusF = els.statusFilter.value;
-  var buyerF = els.buyerFilter.value;
-  var filtered = allRows.filter(function(r){
-    if(statusF && String(r.status) !== statusF) return false;
-    if(buyerF && String(r.buyer) !== buyerF) return false;
-    if(q){
-      var hay = (r.ewo + " " + r.status + " " + r.buyer + " " + r.team + " " + r.execUnit + " " + r.note).toLowerCase();
-      if(hay.indexOf(q) === -1) return false;
-    }
-    return true;
+  var head = '<thead><tr>' + visibleCols.map(function(h){
+    var arrow = (sortCol === h) ? ' <span class="arrow">' + (sortDir > 0 ? "▲" : "▼") + '</span>' : "";
+    return '<th' + numCls(h) + ' data-col="' + esc(h) + '">' + esc(h) + arrow + '</th>';
+  }).join("") + '</tr></thead>';
+
+  var body = '<tbody>' + slice.map(function(r){
+    return '<tr>' + visibleCols.map(function(h){
+      return '<td' + numCls(h) + '>' + cellHtml(r, h) + '</td>';
+    }).join("") + '</tr>';
+  }).join("") + '</tbody>';
+
+  var foot = '<tfoot><tr>' + visibleCols.map(function(h, i){
+    if(i === 0) return '<td>' + fmtInt(filtered.length) + ' orders</td>';
+    if(isSummable(h)) return '<td class="num">' + fmtInt(sum(filtered, h)) + '</td>';
+    if(isAveraged(h)) return '<td class="num">avg ' + fmt1(avg(filtered, h)) + '</td>';
+    return '<td></td>';
+  }).join("") + '</tr></tfoot>';
+
+  els.dataTable.innerHTML = filtered.length
+    ? head + body + foot
+    : '<tbody><tr><td class="empty-note">No orders match these filters.</td></tr></tbody>';
+
+  Array.prototype.forEach.call(els.dataTable.querySelectorAll("th[data-col]"), function(th){
+    th.addEventListener("click", function(){
+      var name = th.getAttribute("data-col");
+      if(sortCol === name){
+        sortDir = -sortDir;
+      }else{
+        sortCol = name;
+        // Numbers and dates are nearly always wanted largest or latest first;
+        // names read better the other way.
+        sortDir = (COLTYPE[name] === "text") ? 1 : -1;
+      }
+      sortFiltered();
+      renderTable();
+    });
   });
-  renderTable(filtered);
+
+  els.pageInfo.textContent = "Page " + (page + 1) + " of " + pages
+    + "  ·  rows " + (filtered.length ? page * size + 1 : 0)
+    + " to " + Math.min(filtered.length, page * size + size);
+  els.prevPage.disabled = (page === 0);
+  els.nextPage.disabled = (page >= pages - 1);
 }
 
-els.searchInput.addEventListener("input", applyFilters);
-els.statusFilter.addEventListener("change", applyFilters);
-els.buyerFilter.addEventListener("change", applyFilters);
-els.refreshBtn.addEventListener("click", function(){
-  if(lastLoader) run(lastLoader, els.fileLabel.textContent);
+/* ---------- CSV of the filtered set ---------- */
+function csvCell(v){
+  var s = String(v == null ? "" : v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportCsv(){
+  var cols = visibleCols;
+  var lines = [cols.map(csvCell).join(",")];
+  filtered.forEach(function(r){
+    lines.push(cols.map(function(h){
+      var t = COLTYPE[h];
+      if(t === "date"){
+        var d = dat(r, h);
+        return csvCell(d == null ? txt(r, h) : new Date(d).toISOString().slice(0, 10));
+      }
+      if(t === "number"){ var v = num(r, h); return v == null ? "" : v; }
+      return csvCell(txt(r, h));
+    }).join(","));
+  });
+  // The byte order mark keeps Excel happy with non-ASCII buyer names.
+  var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ewo-export-" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+var searchTimer = null;
+els.searchInput.addEventListener("input", function(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function(){ page = 0; applyFilters(); }, 200);
 });
+[els.dateField, els.dateFrom, els.dateTo].forEach(function(el){
+  el.addEventListener("change", function(){ page = 0; applyFilters(); });
+});
+els.resetBtn.addEventListener("click", resetAll);
+els.groupBy.addEventListener("change", renderPivot);
+els.pageSize.addEventListener("change", function(){ page = 0; renderTable(); });
+els.prevPage.addEventListener("click", function(){ page--; renderTable(); });
+els.nextPage.addEventListener("click", function(){ page++; renderTable(); });
+els.csvBtn.addEventListener("click", exportCsv);
+els.refreshBtn.addEventListener("click", function(){ if(lastLoader) run(lastLoader, sourceLabel); });
 
 /* ============================================================
    Startup
    ============================================================ */
 (async function(){
-  if(FLOW_URL){
-    els.fileLabel.textContent = "Live via Power Automate";
-    await run(loadFromFlow, "Live via Power Automate");
-    return;
-  }
-
+  if(FLOW_URL){ await run(loadFromFlow, "Live via Power Automate"); return; }
   try{
     var bundle = await loadFromJson();
     await run(function(){ return Promise.resolve(bundle); }, "OneDrive workbook");
-    return;
   }catch(e){
     els.loadingState.style.display = "none";
     els.fileLabel.textContent = "No data published yet";
     setStatus("No data yet", "err");
     showError("<strong>The data file has not been published yet.</strong><br/><br/>"
-      + "This page reads <code>data.json</code>, which the GitHub Action builds from your "
-      + "OneDrive workbook. Open the <strong>Actions</strong> tab in the repository and run "
-      + "<strong>Refresh EWO data</strong> once. After it finishes, reload this page.<br/><br/>"
-      + "If the run failed, the usual cause is a missing <code>ONEDRIVE_SHARE_URL</code> secret. "
-      + "Step 2 in README.md covers it.");
+      + "This page reads <code>data.json</code>, which the GitHub Action builds from your OneDrive "
+      + "workbook. Open the <strong>Actions</strong> tab and run <strong>Refresh EWO data</strong> once, "
+      + "then reload this page.");
   }
 })();
 </script>

@@ -12,8 +12,8 @@ A browser on another website cannot do this, because the download endpoint
 sends no cross-origin headers. That is why this runs on a server, in GitHub
 Actions or on a PC, rather than inside the page.
 
-Only the columns the dashboard actually uses are written out, so data.json
-stays small even when the workbook is large.
+Every named column in the EWO sheet is published, so the dashboard can
+slice the data any way it likes.
 
 Usage
 -----
@@ -44,12 +44,14 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 
 SHEET_MAIN, SHEET_FABRIC, SHEET_SEW = "EWO", "Fsum", "Ssum"
 
-# Exactly what index.html reads. Anything else is left out of data.json.
-WANTED_COLUMNS = [
-    "EWO", "Status", "Buyer", "Team", "Execution Unit",
-    "Order Qty", "Fab Qty", "Order Bank Date", "Latest note", "Dept",
-]
+# Every column that carries a header name is published. Unnamed spacer columns
+# are dropped, and a repeated name keeps its first occurrence so the dashboard
+# never has to guess which of two identical headers it is looking at.
 HEADER_MUST_CONTAIN = ["status", "buyer"]
+
+# Columns the dashboard cannot work without. Their absence is worth shouting
+# about, because every chart and filter is built on them.
+REQUIRED_COLUMNS = ["EWO", "Status", "Buyer"]
 
 
 # --------------------------------------------------------------------------
@@ -171,20 +173,23 @@ def extract_main_sheet(ws):
         if name is not None:
             lookup.setdefault(str(name).strip().lower(), i)
 
-    keep, out_header, missing = [], [], []
-    for want in WANTED_COLUMNS:
-        idx = lookup.get(want.lower())
-        if idx is None:
-            missing.append(want)
+    keep, out_header, seen = [], [], set()
+    for i, name in enumerate(header):
+        if name is None:
             continue
-        keep.append(idx)
-        out_header.append(want)
+        label = str(name).strip()
+        if not label or label.lower() in seen:
+            continue
+        seen.add(label.lower())
+        keep.append(i)
+        out_header.append(label)
 
-    if missing:
-        print("  note: columns not in the sheet, skipped: %s" % ", ".join(missing),
-              file=sys.stderr)
+    absent = [c for c in REQUIRED_COLUMNS if c.lower() not in seen]
+    if absent:
+        raise SystemExit("These columns are missing from the sheet and the dashboard "
+                         "cannot run without them: %s" % ", ".join(absent))
 
-    id_pos = out_header.index("EWO") if "EWO" in out_header else 0
+    id_pos = out_header.index("EWO")
     out = [out_header]
     for row in rows[header_idx + 1:]:
         picked = [cell_value(row[i]) if i < len(row) else None for i in keep]
