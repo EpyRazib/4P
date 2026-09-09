@@ -182,6 +182,17 @@
   .empty-note{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:12.5px;}
   .flash{animation:flash 1.6s ease-out;}
   @keyframes flash{0%{background:var(--gold-soft);}100%{background:transparent;}}
+  .granbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .granlabel{font-size:11.5px;color:var(--ink-soft);}
+  .granhint{font-size:11px;color:var(--ink-soft);}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:#fff;}
+  .segbtn{
+    border:none;background:#fff;color:var(--ink-soft);padding:6px 16px;
+    font-size:12px;border-radius:0;border-right:1px solid var(--line);
+  }
+  .segbtn:last-child{border-right:none;}
+  .segbtn:hover{background:var(--green-soft);color:var(--green);}
+  .segbtn.on{background:var(--green);color:#fff;font-weight:600;}
   .tabpage{display:none;}
   .tabpage.on{display:block;}
 </style>
@@ -234,6 +245,14 @@
         <div class="fld" id="dateFieldWrap">
           <label for="dateField">Date field</label>
           <select id="dateField"></select>
+        </div>
+        <div class="fld">
+          <label for="yearFilter">Year</label>
+          <select id="yearFilter"><option value="">All years</option></select>
+        </div>
+        <div class="fld">
+          <label for="monthFilter">Month</label>
+          <select id="monthFilter"><option value="">All months</option></select>
         </div>
         <div class="fld">
           <label for="dateFrom">From</label>
@@ -305,19 +324,28 @@
 
     <!-- ============ TIMELINE ============ -->
     <div class="tabpage" id="page-timeline">
+      <div class="granbar">
+        <span class="granlabel">Group these three charts by</span>
+        <div class="seg" id="granSwitch">
+          <button class="segbtn" data-gran="day">Day</button>
+          <button class="segbtn" data-gran="week">Week</button>
+          <button class="segbtn on" data-gran="month">Month</button>
+        </div>
+        <span class="granhint" id="granHint"></span>
+      </div>
       <div class="grid3">
         <div class="panel">
-          <h3>Order quantity by PCD month</h3>
+          <h3 data-grantitle="Order quantity by PCD {g}">Order quantity by PCD month</h3>
           <div class="hint">Cutting load ahead, from Adjusted PCD</div>
           <div class="chart-box"><canvas id="pcdChart"></canvas></div>
         </div>
         <div class="panel">
-          <h3>Fabric quantity by fabric start</h3>
+          <h3 data-grantitle="Fabric quantity by fabric start {g}">Fabric quantity by fabric start</h3>
           <div class="hint">From Adjusted Fabric Start</div>
           <div class="chart-box"><canvas id="fabMonthChart"></canvas></div>
         </div>
         <div class="panel">
-          <h3>Sewing hours by sew start</h3>
+          <h3 data-grantitle="Sewing hours by sew start {g}">Sewing hours by sew start</h3>
           <div class="hint">FR hour, from Adjusted sew start</div>
           <div class="chart-box"><canvas id="sewMonthChart"></canvas></div>
         </div>
@@ -401,7 +429,7 @@ var charts = {};
 var HEADERS = [], COLTYPE = {}, COLEMPTY = {}, IDX = {};
 var ROWS = [], FSUM = [], SSUM = [];
 var visibleCols = [], filtered = [], baseFiltered = [];
-var activeAlert = null, activeTab = "overview";
+var activeAlert = null, activeTab = "overview", granularity = "month";
 var sortCol = null, sortDir = 1;
 var pivotSort = "Order Qty", pivotDir = -1;
 var page = 0;
@@ -411,6 +439,7 @@ var pollTimer = null, freshTimer = null, sourceLabel = "";
 var els = {};
 ["fileLabel","statusDot","statusText","freshness","refreshBtn","csvBtn","loadingState","dashboard",
  "errorBox","filterGrid","searchInput","dateField","dateFieldWrap","dateFrom","dateTo","resetBtn",
+ "yearFilter","monthFilter","granSwitch","granHint",
  "filterSummary","activeChips","kpiRow","alertRow","attnTable","attnTableTitle","attnTableHint",
  "pivotTable","dataTable","groupBy","colChooser","prevPage","nextPage","pageInfo","pageSize",
  "detailHint","tabBar","attnCount"
@@ -429,6 +458,8 @@ function fmtInt(n){ return Math.round(n || 0).toLocaleString(); }
 function fmt1(n){ return (Math.round((n || 0) * 10) / 10).toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1}); }
 
 var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var MONTH_FULL = ["January","February","March","April","May","June",
+                  "July","August","September","October","November","December"];
 
 function parseDate(v){
   if(typeof v !== "string") return null;
@@ -619,7 +650,8 @@ function ingest(bundle){
 /* A background refresh must not throw away what the reader had selected. */
 function snapshotFilters(){
   var s = { dims: {}, q: els.searchInput.value, df: els.dateField.value,
-            from: els.dateFrom.value, to: els.dateTo.value };
+            from: els.dateFrom.value, to: els.dateTo.value,
+            year: els.yearFilter.value, month: els.monthFilter.value };
   Object.keys(dimSelects).forEach(function(k){ s.dims[k] = dimSelects[k].value; });
   return s;
 }
@@ -628,6 +660,11 @@ function restoreFilters(s){
   if(s.df){ els.dateField.value = s.df; }
   els.dateFrom.value = s.from || "";
   els.dateTo.value = s.to || "";
+  if(s.year){
+    var hasYear = Array.prototype.some.call(els.yearFilter.options, function(o){ return o.value === s.year; });
+    if(hasYear) els.yearFilter.value = s.year;
+  }
+  els.monthFilter.value = s.month || "";
   Object.keys(s.dims).forEach(function(k){
     if(dimSelects[k] && s.dims[k]){
       var has = Array.prototype.some.call(dimSelects[k].options, function(o){ return o.value === s.dims[k]; });
@@ -705,11 +742,30 @@ function buildFilters(){
   var dateCols = HEADERS.filter(function(h){ return COLTYPE[h] === "date" && !COLEMPTY[h]; });
   els.dateField.innerHTML = '<option value="">No date filter</option>'
     + dateCols.map(function(h){ return '<option value="' + esc(h) + '">' + esc(h) + '</option>'; }).join("");
+
+  // Years actually present anywhere in the workbook's dates, so the list never
+  // offers a year with nothing behind it.
+  var years = {};
+  ROWS.forEach(function(r){
+    dateCols.forEach(function(h){
+      var d = dat(r, h);
+      if(d != null) years[new Date(d).getUTCFullYear()] = true;
+    });
+  });
+  var yearList = Object.keys(years).map(Number).sort();
+  els.yearFilter.innerHTML = '<option value="">All years</option>'
+    + yearList.map(function(y){ return '<option value="' + y + '">' + y + '</option>'; }).join("");
+  els.monthFilter.innerHTML = '<option value="">All months</option>'
+    + MONTH_FULL.map(function(name, i){
+        return '<option value="' + (i + 1) + '">' + name + '</option>';
+      }).join("");
 }
 
 function currentFilters(){
   var f = { q: els.searchInput.value.trim().toLowerCase(), dims: {},
-            dateField: els.dateField.value, from: null, to: null };
+            dateField: els.dateField.value, from: null, to: null,
+            year: els.yearFilter.value ? parseInt(els.yearFilter.value, 10) : null,
+            month: els.monthFilter.value ? parseInt(els.monthFilter.value, 10) : null };
   Object.keys(dimSelects).forEach(function(k){ if(dimSelects[k].value) f.dims[k] = dimSelects[k].value; });
   if(els.dateFrom.value) f.from = parseDate(els.dateFrom.value);
   if(els.dateTo.value) f.to = parseDate(els.dateTo.value);
@@ -720,11 +776,15 @@ function passesBaseFilters(r, f, dimKeys){
   for(var i = 0; i < dimKeys.length; i++){
     if(txt(r, dimKeys[i]) !== f.dims[dimKeys[i]]) return false;
   }
-  if(f.dateField && (f.from != null || f.to != null)){
+  var wantsDate = f.from != null || f.to != null || f.year != null || f.month != null;
+  if(f.dateField && wantsDate){
     var d = dat(r, f.dateField);
-    if(d == null) return false;
+    if(d == null) return false;                       // no date means it cannot match a date filter
     if(f.from != null && d < f.from) return false;
     if(f.to != null && d > f.to) return false;
+    var dd = new Date(d);
+    if(f.year != null && dd.getUTCFullYear() !== f.year) return false;
+    if(f.month != null && dd.getUTCMonth() + 1 !== f.month) return false;
   }
   if(f.q){
     var hay = "";
@@ -764,6 +824,7 @@ function resetAll(){
   els.searchInput.value = "";
   Object.keys(dimSelects).forEach(function(k){ dimSelects[k].value = ""; });
   els.dateField.value = ""; els.dateFrom.value = ""; els.dateTo.value = "";
+  els.yearFilter.value = ""; els.monthFilter.value = "";
   activeAlert = null; sortCol = null; page = 0;
   applyFilters();
 }
@@ -917,6 +978,12 @@ function renderFilterSummary(){
     if(dimSelects[k].value) chips.push(['', k + ": " + dimSelects[k].value]);
   });
   if(els.searchInput.value.trim()) chips.push(['', 'search "' + els.searchInput.value.trim() + '"']);
+  if(els.dateField.value && (els.yearFilter.value || els.monthFilter.value)){
+    var part = [];
+    if(els.monthFilter.value) part.push(MONTH_FULL[parseInt(els.monthFilter.value, 10) - 1]);
+    if(els.yearFilter.value) part.push(els.yearFilter.value);
+    chips.push(['', els.dateField.value + ": " + part.join(" ")]);
+  }
   if(els.dateField.value && (els.dateFrom.value || els.dateTo.value)){
     chips.push(['', els.dateField.value + " " + (els.dateFrom.value || "any") + " to " + (els.dateTo.value || "any")]);
   }
@@ -1013,20 +1080,41 @@ function renderDimensionCharts(){
   }
 }
 
-function monthSeries(dateCol, measure){
+/* Buckets are keyed by the millisecond value of the period's first day, so a
+   single numeric sort orders every granularity correctly. */
+function weekStart(ms){
+  var dow = new Date(ms).getUTCDay();        // 0 is Sunday
+  return ms - (dow === 0 ? 6 : dow - 1) * DAY;
+}
+function bucketKey(ms, gran){
+  if(gran === "day") return ms;
+  if(gran === "week") return weekStart(ms);
+  var d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+}
+function bucketLabel(ms, gran){
+  if(gran === "month"){
+    var d = new Date(ms);
+    return MONTH_ABBR[d.getUTCMonth()] + " " + String(d.getUTCFullYear()).slice(2);
+  }
+  return fmtDate(ms);                        // day, and the Monday for a week
+}
+
+function bucketSeries(dateCol, measure, gran){
   if(IDX[dateCol] == null) return { labels: [], values: [] };
   var m = {};
   filtered.forEach(function(r){
     var d = dat(r, dateCol);
     if(d == null) return;
-    var k = monthKey(d);
+    var k = bucketKey(d, gran);
     m[k] = (m[k] || 0) + (measure ? (num(r, measure) || 0) : 1);
   });
-  var keys = Object.keys(m).sort();
-  return { labels: keys.map(monthLabel), values: keys.map(function(k){ return m[k]; }) };
+  var keys = Object.keys(m).map(Number).sort(function(a, b){ return a - b; });
+  return { labels: keys.map(function(k){ return bucketLabel(k, gran); }),
+           values: keys.map(function(k){ return m[k]; }) };
 }
 
-function lineChart(canvasId, series, label, colour, fill){
+function lineChart(canvasId, series, label, colour, fill, gran){
   destroyChart(canvasId);
   var el = document.getElementById(canvasId);
   if(!el || series.labels.length === 0) return;
@@ -1035,18 +1123,39 @@ function lineChart(canvasId, series, label, colour, fill){
     data: { labels: series.labels,
             datasets: [{ label: label, data: series.values, borderColor: colour,
                          backgroundColor: fill, fill: true, tension: 0.25,
-                         pointRadius: 3, pointBackgroundColor: colour, borderWidth: 2 }] },
+                         pointRadius: series.labels.length > 60 ? 0 : 3,
+                         pointBackgroundColor: colour, borderWidth: 2 }] },
     options: { responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false },
                  tooltip: { callbacks: { label: function(c){ return label + ": " + fmtInt(c.parsed.y); } } } },
-      scales: { x: { ticks: { font: MONO }, grid: { display: false } }, y: { ticks: { font: MONO }, grid: GRID } } }
+      scales: {
+        x: { ticks: { font: MONO, maxRotation: gran === "day" ? 60 : 0,
+                      autoSkip: true, maxTicksLimit: gran === "day" ? 12 : 16 },
+             grid: { display: false } },
+        y: { ticks: { font: MONO }, grid: GRID } } }
   });
 }
 
 function renderMonthCharts(){
-  lineChart("pcdChart", monthSeries("Adjusted PCD", "Order Qty"), "Order Qty", "#006040", "rgba(0,96,64,0.10)");
-  lineChart("fabMonthChart", monthSeries("Adjusted Fabric Start", "Fab Qty"), "Fab Qty", "#F8B000", "rgba(248,176,0,0.14)");
-  lineChart("sewMonthChart", monthSeries("Adjusted sew start", "FR hour"), "FR hour", "#0A7A54", "rgba(10,122,84,0.10)");
+  var g = granularity;
+  var pcd = bucketSeries("Adjusted PCD", "Order Qty", g);
+  lineChart("pcdChart", pcd, "Order Qty", "#006040", "rgba(0,96,64,0.10)", g);
+  lineChart("fabMonthChart", bucketSeries("Adjusted Fabric Start", "Fab Qty", g),
+            "Fab Qty", "#F8B000", "rgba(248,176,0,0.14)", g);
+  lineChart("sewMonthChart", bucketSeries("Adjusted sew start", "FR hour", g),
+            "FR hour", "#0A7A54", "rgba(10,122,84,0.10)", g);
+
+  var word = g === "day" ? "day" : (g === "week" ? "week" : "month");
+  els.granHint.textContent = pcd.labels.length
+    ? pcd.labels.length + " " + word + (pcd.labels.length === 1 ? "" : "s") + " with orders"
+      + (g === "week" ? ". Each point is the Monday of that week." : "")
+    : "";
+  Array.prototype.forEach.call(els.granSwitch.querySelectorAll(".segbtn"), function(b){
+    b.classList.toggle("on", b.getAttribute("data-gran") === g);
+  });
+  document.querySelectorAll("[data-grantitle]").forEach(function(h){
+    h.textContent = h.getAttribute("data-grantitle").replace("{g}", word);
+  });
 }
 
 function renderWorkbookMonthly(){
@@ -1309,6 +1418,33 @@ els.searchInput.addEventListener("input", function(){
 });
 [els.dateField, els.dateFrom, els.dateTo].forEach(function(el){
   el.addEventListener("change", function(){ page = 0; applyFilters(); });
+});
+
+/* Year and month need a date column to work on. Rather than making the reader
+   pick one first, fall back to the most useful one on their behalf. */
+function ensureDateField(){
+  if(els.dateField.value) return;
+  var opts = Array.prototype.map.call(els.dateField.options, function(o){ return o.value; })
+    .filter(function(v){ return v; });
+  var preferred = ["Adjusted PCD", "Order Bank Date", "Adjusted Fabric Start"];
+  for(var i = 0; i < preferred.length; i++){
+    if(opts.indexOf(preferred[i]) !== -1){ els.dateField.value = preferred[i]; return; }
+  }
+  if(opts.length) els.dateField.value = opts[0];
+}
+[els.yearFilter, els.monthFilter].forEach(function(el){
+  el.addEventListener("change", function(){
+    if(el.value) ensureDateField();
+    page = 0;
+    applyFilters();
+  });
+});
+
+els.granSwitch.addEventListener("click", function(e){
+  var b = e.target.closest(".segbtn");
+  if(!b) return;
+  granularity = b.getAttribute("data-gran");
+  renderMonthCharts();
 });
 els.resetBtn.addEventListener("click", resetAll);
 els.groupBy.addEventListener("change", renderPivot);
