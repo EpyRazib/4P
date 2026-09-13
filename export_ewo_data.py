@@ -324,10 +324,10 @@ def extract_monthly_sheet(ws):
 # --------------------------------------------------------------------------
 # The fabric delivery workbook
 # --------------------------------------------------------------------------
-# Eight columns cover every chart on the delivery tab. Booking numbers, fabric
-# construction and USD values were dropped: they added 500 KB and nothing the
-# dashboard shows. Add a name back here if a new chart needs it.
-DELIVERY_COLUMNS = ["DeliveryDate", "ExportOrderNo", "Buyer", "DeliveryType",
+# Nine columns cover every chart on the delivery tab. BookingNo is what ties a
+# delivery line to its row in the lock plan. Fabric construction and USD values
+# were dropped: they added weight and nothing the dashboard shows.
+DELIVERY_COLUMNS = ["DeliveryDate", "ExportOrderNo", "BookingNo", "Buyer", "DeliveryType",
                     "BeneficieryUnit", "ExecutionUnit", "FabricType", "DeliveryQtyKg"]
 
 
@@ -438,6 +438,11 @@ def extract_lock_report_meta(ws):
                 meta["daysDone"] = nxt
             if t == "remain" and nxt is not None:
                 meta["daysRemain"] = nxt
+            # Two percentages whose formula lives only in the sheet; shown as published.
+            if t == "fabric start %" and nxt is not None:
+                meta["fabricStartPct"] = nxt
+            if t == "fabric end %" and nxt is not None:
+                meta["fabricEndPct"] = nxt
     dates = [c for r in rows[:2] for c in r if isinstance(c, (dt.date, dt.datetime))]
     if len(dates) >= 2:
         meta["reportFrom"] = cell_value(dates[0])
