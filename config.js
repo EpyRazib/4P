@@ -14,7 +14,7 @@ window.EWO_CONFIG = {
      place and shows its progress in the status text. See
      rebuild-worker.js for how to create it. Leave "" to fall back to
      opening the Action page instead. */
-  REBUILD_API: "",
+  REBUILD_API: "https://4p.razib-hossain.workers.dev/",
 
   /* The Action page, used only when REBUILD_API is empty. */
   REBUILD_URL: "https://github.com/EpyRazib/4P/actions/workflows/refresh-data.yml",
