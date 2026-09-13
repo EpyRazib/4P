@@ -4,10 +4,16 @@ name: Refresh EWO data
 # and commits it when the numbers have actually changed. GitHub Pages then
 # serves the fresh file to everyone with no action from anybody.
 #
-# Before this runs you must add the sharing link as a repository secret:
+# Before this runs, add ONE repository secret:
 #   Settings -> Secrets and variables -> Actions -> New repository secret
-#   Name:   ONEDRIVE_SHARE_URL
-#   Value:  the "Anyone with the link" address for the workbook
+#   Name:   ONEDRIVE_FOLDER_URL
+#   Value:  the "Anyone with the link" address of the OneDrive FOLDER that holds
+#           both workbooks. The script finds them by name: one matching
+#           "EWO ... Life ... Cycle", one matching "Fabric ... Delivery".
+#
+# The older per-file secrets still work as a fallback when the folder secret
+# is absent: ONEDRIVE_SHARE_URL (EWO workbook) and ONEDRIVE_SHARE_URL_2
+# (Fabric Delivery workbook).
 #
 # Keeping it in a secret rather than in the workflow file means the link does
 # not sit in public source, so nobody can grab the whole workbook from it.
@@ -45,20 +51,31 @@ jobs:
       - name: Install openpyxl
         run: python -m pip install --quiet --upgrade openpyxl
 
-      - name: Confirm the sharing link secret exists
+      - name: Confirm a sharing link secret exists
         env:
+          FOLDER_URL: ${{ secrets.ONEDRIVE_FOLDER_URL }}
           SHARE_URL: ${{ secrets.ONEDRIVE_SHARE_URL }}
         run: |
-          if [ -z "$SHARE_URL" ]; then
-            echo "::error::The ONEDRIVE_SHARE_URL secret is not set."
-            echo "Add it under Settings > Secrets and variables > Actions."
+          if [ -z "$FOLDER_URL" ] && [ -z "$SHARE_URL" ]; then
+            echo "::error::Neither ONEDRIVE_FOLDER_URL nor ONEDRIVE_SHARE_URL is set."
+            echo "Add ONEDRIVE_FOLDER_URL under Settings > Secrets and variables > Actions."
             exit 1
           fi
 
-      - name: Build data.json from the workbook
+      - name: Build data.json from the workbooks
         env:
+          FOLDER_URL: ${{ secrets.ONEDRIVE_FOLDER_URL }}
           SHARE_URL: ${{ secrets.ONEDRIVE_SHARE_URL }}
-        run: python export_ewo_data.py "$SHARE_URL" -o data.json
+          DELIVERY_URL: ${{ secrets.ONEDRIVE_SHARE_URL_2 }}
+        run: |
+          if [ -n "$FOLDER_URL" ]; then
+            python export_ewo_data.py --folder "$FOLDER_URL" -o data.json
+          elif [ -n "$DELIVERY_URL" ]; then
+            python export_ewo_data.py "$SHARE_URL" --delivery "$DELIVERY_URL" -o data.json
+          else
+            echo "::warning::No delivery workbook link, so the fabric delivery tab will be empty."
+            python export_ewo_data.py "$SHARE_URL" -o data.json
+          fi
 
       - name: Show what was produced
         run: ls -l data.json
