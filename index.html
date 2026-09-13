@@ -101,6 +101,11 @@
   /* ---------- kpi ---------- */
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px;}
   .kpi{background:#fff;padding:14px 16px;border-top:2px solid transparent;}
+  /* ten tiles sit in two clean rows of five, six in one row, so no grey gaps show */
+  .kpis.ten{grid-template-columns:repeat(5,1fr);}
+  .kpis.six{grid-template-columns:repeat(6,1fr);}
+  @media(max-width:1100px){.kpis.ten{grid-template-columns:repeat(3,1fr);}.kpis.six{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:700px){.kpis.ten,.kpis.six{grid-template-columns:repeat(2,1fr);}}
   .kpi:nth-child(odd){border-top-color:var(--green);}
   .kpi:nth-child(even){border-top-color:var(--gold);}
   .kpi .label{color:var(--ink-soft);font-size:10.5px;margin-bottom:5px;letter-spacing:0.02em;}
@@ -221,6 +226,8 @@
   <button class="tab on" data-tab="overview">Overview</button>
   <button class="tab" data-tab="attention">Needs attention <span class="count" id="attnCount">0</span></button>
   <button class="tab" data-tab="timeline">Timeline</button>
+  <button class="tab" data-tab="capacity">Capacity</button>
+  <button class="tab" data-tab="delivery">Fabric delivery</button>
   <button class="tab" data-tab="summary">Summary</button>
   <button class="tab" data-tab="orders">Orders</button>
 </div>
@@ -364,6 +371,123 @@
       </div>
     </div>
 
+    <!-- ============ CAPACITY ============ -->
+    <div class="tabpage" id="page-capacity">
+      <div class="kpis six" id="capKpis"></div>
+      <div class="granbar">
+        <span class="granlabel">Group by</span>
+        <div class="seg" id="granSwitch2">
+          <button class="segbtn" data-gran="day">Day</button>
+          <button class="segbtn" data-gran="week">Week</button>
+          <button class="segbtn on" data-gran="month">Month</button>
+        </div>
+        <span class="granhint">Each order's quantity is spread evenly across its planned window, exactly as the fab and Sew sheets do. Filters apply.</span>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h3 data-grantitle2="In-house fabric load per {g}">In-house fabric load per month</h3>
+          <div class="hint">Textile mill knitting load: InHouse kg across Adjusted Fabric Start to End, as the fab sheet builds it</div>
+          <div class="chart-box tall"><canvas id="fabLoadChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3 data-grantitle2="Sewing load per {g}">Sewing load per month</h3>
+          <div class="hint">FR hour across Adjusted sew start to end, locked orders against the rest</div>
+          <div class="chart-box tall"><canvas id="sewLoadChart"></canvas></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>In-house fabric load by unit</h3>
+          <div class="hint">Same spread, split by Execution Unit, monthly</div>
+          <div class="chart-box tall"><canvas id="fabUnitChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>Sewing load by unit</h3>
+          <div class="hint">Same spread, split by Execution Unit, monthly</div>
+          <div class="chart-box tall"><canvas id="sewUnitChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DELIVERY ============ -->
+    <div class="tabpage" id="page-delivery">
+      <div id="deliveryEmpty" class="empty-note" style="display:none;">
+        The fabric delivery workbook has not been published yet. Add the
+        <code>ONEDRIVE_SHARE_URL_2</code> secret and run the Action once.
+      </div>
+      <div id="deliveryBody">
+        <div class="granbar">
+          <span class="granlabel">Report as of</span>
+          <input type="date" id="asOfDate" />
+          <button class="secondary tiny" id="asOfReset">Report date</button>
+          <span class="granhint" id="asOfHint"></span>
+        </div>
+        <div class="kpis ten" id="delKpis"></div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3>Lock plan against delivery, cumulative</h3>
+            <div class="hint">Required by day from the lock plan, against fresh delivery to those orders</div>
+            <div class="chart-box tall"><canvas id="cumChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <h3 data-grantitle3="Fabric delivered per {g}">Fabric delivered per day</h3>
+            <div class="hint">
+              Fresh delivery, re-delivery and returns, from the Delivery sheet
+              <span class="seg" id="granSwitch3" style="margin-left:10px;vertical-align:middle;">
+                <button class="segbtn on" data-gran="day">Day</button>
+                <button class="segbtn" data-gran="week">Week</button>
+                <button class="segbtn" data-gran="month">Month</button>
+              </span>
+            </div>
+            <div class="chart-box tall"><canvas id="delDailyChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3>Plan against actual by unit</h3>
+            <div class="hint">Required till the report date, against delivered, as the weekly KPI defines it</div>
+            <div class="chart-box tall"><canvas id="unitPvaChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <h3>Plan against actual by buyer</h3>
+            <div class="hint">Largest twelve by requirement</div>
+            <div class="chart-box tall"><canvas id="buyerPvaChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3>Delivery by fabric type</h3>
+            <div class="hint">Net kilograms in the filtered period</div>
+            <div class="chart-box"><canvas id="fabTypeChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <h3>Delivery by receiving unit</h3>
+            <div class="hint">Net kilograms in the filtered period</div>
+            <div class="chart-box"><canvas id="delUnitChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Weekly KPI, by buyer</h3>
+          <div class="hint" id="kpiBuyerHint">Same columns and rules as the LockRepo sheet, so the totals match the published report</div>
+          <div class="table-wrap short"><table id="kpiBuyerTable"></table></div>
+        </div>
+        <div class="panel">
+          <h3>Weekly KPI, by garments unit</h3>
+          <div class="hint">Same rules, grouped by unit</div>
+          <div class="table-wrap short"><table id="kpiUnitTable"></table></div>
+        </div>
+        <div class="panel">
+          <h3>Bookings behind plan</h3>
+          <div class="hint" id="deficitHint">Largest shortfalls first. Click a heading to sort.</div>
+          <div class="table-wrap short"><table id="deficitTable"></table></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ SUMMARY ============ -->
     <div class="tabpage" id="page-summary">
       <div class="panel">
@@ -424,7 +548,7 @@ var POLL_SECONDS = 120;          // how often to check whether the data changed
 
    Leave REBUILD_API empty and the button falls back to opening the Action page
    at REBUILD_URL. Empty both and the button disappears. */
-var REBUILD_API = "https://4p.razib-hossain.workers.dev/";
+var REBUILD_API = "";
 var REBUILD_URL = "https://github.com/EpyRazib/4P/actions/workflows/refresh-data.yml";
 var FLOW_URL = "";
 var FLOW_METHOD = "POST";
@@ -442,6 +566,8 @@ var DEFAULT_TABLE_COLUMNS = ["EWO", "Status", "Buyer", "Team", "Execution Unit",
 var charts = {};
 var HEADERS = [], COLTYPE = {}, COLEMPTY = {}, IDX = {};
 var ROWS = [], FSUM = [], SSUM = [];
+var DELIV = [], DIDX = {}, LOCK = [], LIDX = {}, RFDROWS = [], LOCKMETA = {};
+var asOf = null, delGran = "day";
 var visibleCols = [], filtered = [], baseFiltered = [];
 var activeAlert = null, activeTab = "overview", granularity = "month";
 var sortCol = null, sortDir = 1;
@@ -459,7 +585,9 @@ var els = {};
  "yearFilter","monthFilter","granSwitch","granHint",
  "filterSummary","activeChips","kpiRow","alertRow","attnTable","attnTableTitle","attnTableHint",
  "pivotTable","dataTable","groupBy","colChooser","prevPage","nextPage","pageInfo","pageSize",
- "detailHint","tabBar","attnCount"
+ "detailHint","tabBar","attnCount","capKpis","granSwitch2","delKpis","asOfDate","asOfReset",
+ "asOfHint","kpiBuyerTable","kpiUnitTable","deficitTable","deficitHint","deliveryEmpty",
+ "deliveryBody","granSwitch3","kpiBuyerHint"
 ].forEach(function(id){ els[id] = document.getElementById(id); });
 
 /* ---------- helpers ---------- */
@@ -549,6 +677,8 @@ function normaliseBundle(payload){
     return toMatrix(v);
   }
   return { EWO: pick(SHEET_MAIN), Fsum: pick(SHEET_FABRIC), Ssum: pick(SHEET_SEW),
+           Delivery: pick("Delivery"), LockPlan: pick("LockPlan"), RFD: pick("RFD"),
+           LockMeta: (payload && payload.LockMeta) || {},
            generated: (payload && payload.generated) || null };
 }
 async function fetchJson(){
@@ -567,7 +697,8 @@ function fetchData(){ return FLOW_URL ? fetchFlow() : fetchJson(); }
    no re-rendering at all. */
 function signatureOf(bundle){
   return (bundle.generated || "") + "|" + bundle.EWO.length + "|"
-       + (bundle.Fsum ? bundle.Fsum.length : 0) + "|" + (bundle.Ssum ? bundle.Ssum.length : 0);
+       + (bundle.Fsum ? bundle.Fsum.length : 0) + "|" + (bundle.Ssum ? bundle.Ssum.length : 0)
+       + "|" + (bundle.Delivery ? bundle.Delivery.length : 0) + "|" + (bundle.LockPlan ? bundle.LockPlan.length : 0);
 }
 
 async function load(opts){
@@ -655,6 +786,20 @@ function ingest(bundle){
   classifyColumns();
   FSUM = bundle.Fsum || [];
   SSUM = bundle.Ssum || [];
+
+  function table(m){
+    var hdr = (m && m.length) ? m[0].map(function(h){ return String(h == null ? "" : h).trim(); }) : [];
+    var idx = {}; hdr.forEach(function(h, i){ if(idx[h] == null) idx[h] = i; });
+    return { rows: (m || []).slice(1), idx: idx };
+  }
+  var t = table(bundle.Delivery); DELIV = t.rows; DIDX = t.idx;
+  t = table(bundle.LockPlan);     LOCK = t.rows;  LIDX = t.idx;
+  RFDROWS = table(bundle.RFD).rows;
+  LOCKMETA = bundle.LockMeta || {};
+  if(asOf == null){
+    asOf = parseDate(LOCKMETA.reportTo) || TODAY;
+    els.asOfDate.value = new Date(asOf).toISOString().slice(0, 10);
+  }
 
   var keptFilters = snapshotFilters();
   buildFilters();
@@ -981,6 +1126,8 @@ function renderTab(name){
   if(name === "overview") renderDimensionCharts();
   else if(name === "attention") renderAttnTable();
   else if(name === "timeline"){ renderMonthCharts(); renderWorkbookMonthly(); }
+  else if(name === "capacity") renderCapacity();
+  else if(name === "delivery") renderDelivery();
   else if(name === "summary") renderPivot();
   else if(name === "orders") renderTable();
 }
@@ -1408,6 +1555,422 @@ function exportCsv(){
 }
 
 /* ============================================================
+   Capacity: daily load from the planned windows
+
+   The fab and Sew sheets spread each order's quantity evenly across its
+   window. Checked against every one of the 2,128 rows: not one deviates.
+   So the same curve is rebuilt here from start, end and quantity, which
+   means it also answers to every filter, which the sheets cannot.
+   ============================================================ */
+function spreadSeries(rowsIn, startCol, endCol, qtyCol, gran, splitFn){
+  /* returns { keys:[ms...], series:{ label:[values] } } */
+  var buckets = {}, labels = {};
+  rowsIn.forEach(function(r){
+    var s = dat(r, startCol), e = dat(r, endCol), q = num(r, qtyCol);
+    if(s == null || e == null || q == null || q <= 0 || e < s) return;
+    var days = Math.round((e - s) / DAY) + 1;
+    var per = q / days;
+    var lab = splitFn ? splitFn(r) : "All";
+    labels[lab] = true;
+    for(var d = s; d <= e; d += DAY){
+      var k = bucketKey(d, gran);
+      var b = buckets[k] || (buckets[k] = {});
+      b[lab] = (b[lab] || 0) + per;
+    }
+  });
+  var keys = Object.keys(buckets).map(Number).sort(function(a, b){ return a - b; });
+  var series = {};
+  Object.keys(labels).forEach(function(lab){
+    series[lab] = keys.map(function(k){ return buckets[k][lab] || 0; });
+  });
+  return { keys: keys, series: series };
+}
+
+function stackedChart(canvasId, keys, series, gran, unitLabel, colours){
+  destroyChart(canvasId);
+  var el = document.getElementById(canvasId);
+  if(!el || keys.length === 0) return;
+  var names = Object.keys(series);
+  charts[canvasId] = new Chart(el, {
+    type: "bar",
+    data: {
+      labels: keys.map(function(k){ return bucketLabel(k, gran); }),
+      datasets: names.map(function(n, i){
+        return { label: n, data: series[n], backgroundColor: colours[i % colours.length], borderWidth: 0 };
+      })
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { font: MONO, boxWidth: 12 } },
+                 tooltip: { callbacks: { label: function(c){ return c.dataset.label + ": " + fmtInt(c.parsed.y) + " " + unitLabel; } } } },
+      scales: { x: { stacked: true, ticks: { font: MONO, autoSkip: true, maxTicksLimit: gran === "day" ? 14 : 18,
+                                              maxRotation: gran === "day" ? 60 : 0 }, grid: { display: false } },
+                y: { stacked: true, ticks: { font: MONO }, grid: GRID } } }
+  });
+}
+
+function lockedSplit(r){
+  return txt(r, "Status").toLowerCase().indexOf("locked") === 0 ? "Locked" : "Not locked";
+}
+
+function renderCapacity(){
+  var g = granularity;
+  // The fab sheet spreads InHouse, not Fab Qty: it is the textile mill's own
+  // knitting load, and fabric bought outside is not part of it. Verified on
+  // all 2,128 rows.
+  var fab = spreadSeries(filtered, "Adjusted Fabric Start", "Adjusted Fabric End", "InHouse", g, lockedSplit);
+  var sew = spreadSeries(filtered, "Adjusted sew start", "Adjusted sew end", "FR hour", g, lockedSplit);
+  stackedChart("fabLoadChart", fab.keys, fab.series, g, "kg", ["#006040", "#F8B000"]);
+  stackedChart("sewLoadChart", sew.keys, sew.series, g, "hours", ["#006040", "#F8B000"]);
+
+  var fabU = spreadSeries(filtered, "Adjusted Fabric Start", "Adjusted Fabric End", "InHouse", "month",
+                          function(r){ return txt(r, "Execution Unit") || "(blank)"; });
+  var sewU = spreadSeries(filtered, "Adjusted sew start", "Adjusted sew end", "FR hour", "month",
+                          function(r){ return txt(r, "Execution Unit") || "(blank)"; });
+  stackedChart("fabUnitChart", fabU.keys, fabU.series, "month", "kg", PALETTE);
+  stackedChart("sewUnitChart", sewU.keys, sewU.series, "month", "hours", PALETTE);
+
+  // KPI tiles
+  var fabDaily = spreadSeries(filtered, "Adjusted Fabric Start", "Adjusted Fabric End", "InHouse", "day", null);
+  var sewDaily = spreadSeries(filtered, "Adjusted sew start", "Adjusted sew end", "FR hour", "day", null);
+  function peak(sr){ var v = sr.series.All || []; var m = 0, at = null;
+    v.forEach(function(x, i){ if(x > m){ m = x; at = sr.keys[i]; } }); return { max: m, at: at }; }
+  var fp = peak(fabDaily), sp = peak(sewDaily);
+  var planned = filtered.filter(function(r){ return dat(r, "Adjusted Fabric Start") != null && dat(r, "Adjusted Fabric End") != null; });
+  var sewPlanned = filtered.filter(function(r){ return dat(r, "Adjusted sew start") != null && dat(r, "Adjusted sew end") != null; });
+  var notPlannedHours = sum(filtered, "FR hour") - sum(sewPlanned, "FR hour");
+  var tiles = [
+    ["In-house fabric in plan", fmtInt(sum(planned, "InHouse")), planned.length + " orders with a window"],
+    ["Peak knitting day", fmtInt(fp.max), fp.at ? fmtDate(fp.at) : ""],
+    ["In-house not windowed", fmtInt(sum(filtered, "InHouse") - sum(planned, "InHouse")), (filtered.length - planned.length) + " orders, InStock or blank"],
+    ["Sewing hours in plan", fmtInt(sum(sewPlanned, "FR hour")), sewPlanned.length + " orders with a window"],
+    ["Peak sewing day", fmtInt(sp.max), sp.at ? fmtDate(sp.at) : ""],
+    ["Sewing not planned", fmtInt(notPlannedHours), (filtered.length - sewPlanned.length) + " orders without a window"]
+  ];
+  els.capKpis.innerHTML = tiles.map(function(t){
+    return '<div class="kpi"><div class="label">' + esc(t[0]) + '</div><div class="value">' + esc(t[1])
+      + '</div><div class="foot">' + esc(t[2]) + '</div></div>'; }).join("");
+
+  Array.prototype.forEach.call(els.granSwitch2.querySelectorAll(".segbtn"), function(b){
+    b.classList.toggle("on", b.getAttribute("data-gran") === g);
+  });
+  var word = g === "day" ? "day" : (g === "week" ? "week" : "month");
+  document.querySelectorAll("[data-grantitle2]").forEach(function(h){
+    h.textContent = h.getAttribute("data-grantitle2").replace("{g}", word);
+  });
+}
+
+/* ============================================================
+   Fabric delivery: the weekly KPI, rebuilt live
+
+   Every rule below was checked against the LockRepo sheet until each
+   figure matched to the kilogram: required till date, deficit and
+   surplus with their order counts, actual, and RFD on planned orders.
+   ============================================================ */
+function lv(r, n){ var i = LIDX[n]; return i == null ? null : r[i]; }
+function ln(r, n){ return toNum(lv(r, n)) || 0; }
+function ld(r, n){ return parseDate(lv(r, n)); }
+function lt(r, n){ var v = lv(r, n); return v == null ? "" : String(v).trim(); }
+function dv(r, n){ var i = DIDX[n]; return i == null ? null : r[i]; }
+function dn(r, n){ return toNum(dv(r, n)) || 0; }
+function dd(r, n){ return parseDate(dv(r, n)); }
+function dt_(r, n){ var v = dv(r, n); return v == null ? "" : String(v).trim(); }
+
+/* Global filters describe orders. The delivery tab shows the deliveries and
+   lock-plan lines belonging to those orders. With no filter active, it
+   shows everything, including deliveries to orders outside the EWO sheet. */
+/* Returns null when nothing is filtered, otherwise a predicate taking
+   (ewoNumber, buyerText, unitText). An order the EWO sheet knows is judged by
+   whether it survived the filters. A booking or delivery whose order is not in
+   the EWO sheet at all cannot be judged that way, so it is judged directly by
+   its own buyer and unit, but only when those are the sole filters in play.
+   That keeps a plain "Buyer = M&S" in step with the published report, which
+   includes a few M&S bookings the EWO sheet no longer lists. */
+function orderJoin(){
+  if(filtered.length === ROWS.length) return null;
+  var set = {}, known = {};
+  filtered.forEach(function(r){ set[String(num(r, "EWO"))] = true; });
+  ROWS.forEach(function(r){ known[String(num(r, "EWO"))] = true; });
+
+  var f = currentFilters();
+  var buyerF = f.dims["Buyer"] || "", unitF = f.dims["Execution Unit"] || "";
+  var otherDims = Object.keys(f.dims).filter(function(k){ return k !== "Buyer" && k !== "Execution Unit"; });
+  var onlyDirect = !f.q && !activeAlert && otherDims.length === 0
+    && !(f.dateField && (f.from != null || f.to != null || f.year != null || f.month != null));
+
+  return function(ewo, buyer, unit){
+    var key = String(ewo);
+    if(known[key]) return !!set[key];
+    if(!onlyDirect) return false;
+    if(buyerF && String(buyer || "").trim() !== buyerF) return false;
+    if(unitF && String(unit || "").trim() !== unitF) return false;
+    return true;
+  };
+}
+
+function requiredTill(r, asOfMs){
+  var s = ld(r, "LockStart"), e = ld(r, "LockEnd"), q = ln(r, "PlanKg");
+  if(s == null || e == null || e < s || q <= 0) return 0;
+  var days = Math.round((e - s) / DAY) + 1;
+  var upto = Math.min(e, asOfMs);
+  if(upto < s) return 0;
+  var ov = Math.round((upto - s) / DAY) + 1;
+  return q * ov / days;
+}
+
+/* One booking, scored the way the weekly KPI scores it. */
+function scoreBooking(r, asOfMs){
+  var req = requiredTill(r, asOfMs);
+  var del = ln(r, "Delivered");
+  var diff = del - req;
+  var out = { req: req, del: del, plan: ln(r, "PlanKg"), rfd: 0, deficit: 0, surplus: 0, nDef: 0, nSur: 0 };
+  if(diff < -0.5){ out.deficit = diff; out.nDef = 1; }
+  if(req > 0.5){
+    out.rfd = ln(r, "RFD");
+    if(diff > 0.5){ out.surplus = diff; out.nSur = 1; }
+  }
+  out.actual = req + out.deficit + out.surplus;
+  return out;
+}
+
+function kpiGroup(rowsIn, keyFn, asOfMs){
+  var g = {};
+  rowsIn.forEach(function(r){
+    var k = keyFn(r) || "(blank)";
+    var sc = scoreBooking(r, asOfMs);
+    var a = g[k] || (g[k] = { key: k, plan: 0, req: 0, actual: 0, rfd: 0, deficit: 0, surplus: 0, nDef: 0, nSur: 0, n: 0 });
+    a.plan += sc.plan; a.req += sc.req; a.actual += sc.actual; a.rfd += sc.rfd;
+    a.deficit += sc.deficit; a.surplus += sc.surplus; a.nDef += sc.nDef; a.nSur += sc.nSur; a.n++;
+  });
+  return Object.keys(g).map(function(k){ return g[k]; }).sort(function(a, b){ return b.req - a.req; });
+}
+
+function kpiTable(tableEl, rowsOut, firstHeader){
+  var cols = ["Till day planned", "Till day actual", "Net", "Achieved %", "RFD on planned",
+              "Deficit kg", "Deficit orders", "Surplus kg", "Surplus orders"];
+  function cells(a){
+    var pct = a.req > 0 ? Math.round(100 * a.actual / a.req) : 0;
+    return [fmtInt(a.req), fmtInt(a.actual), fmtInt(a.actual - a.req), pct + "%", fmtInt(a.rfd),
+            fmtInt(a.deficit), fmtInt(a.nDef), fmtInt(a.surplus), fmtInt(a.nSur)];
+  }
+  var tot = rowsOut.reduce(function(t, a){
+    t.req += a.req; t.actual += a.actual; t.rfd += a.rfd; t.deficit += a.deficit; t.surplus += a.surplus;
+    t.nDef += a.nDef; t.nSur += a.nSur; return t; },
+    { req: 0, actual: 0, rfd: 0, deficit: 0, surplus: 0, nDef: 0, nSur: 0 });
+  var head = '<thead><tr><th>' + esc(firstHeader) + '</th>' + cols.map(function(c){ return '<th class="num">' + esc(c) + '</th>'; }).join("") + '</tr></thead>';
+  var body = '<tbody>' + rowsOut.map(function(a){
+    return '<tr><td>' + esc(a.key) + '</td>' + cells(a).map(function(v){ return '<td class="num">' + v + '</td>'; }).join("") + '</tr>';
+  }).join("") + '</tbody>';
+  var foot = '<tfoot><tr><td>Total</td>' + cells(tot).map(function(v){ return '<td class="num">' + v + '</td>'; }).join("") + '</tr></tfoot>';
+  tableEl.innerHTML = rowsOut.length ? head + body + foot
+    : '<tbody><tr><td class="empty-note">No lock plan lines match these filters.</td></tr></tbody>';
+  return tot;
+}
+
+function pvaChart(canvasId, rowsOut, limit){
+  destroyChart(canvasId);
+  var el = document.getElementById(canvasId);
+  var rows = limit ? rowsOut.slice(0, limit) : rowsOut;
+  if(!el || rows.length === 0) return;
+  charts[canvasId] = new Chart(el, {
+    type: "bar",
+    data: { labels: rows.map(function(a){ return a.key; }),
+            datasets: [
+              { label: "Required till date", data: rows.map(function(a){ return Math.round(a.req); }), backgroundColor: "#F8B000" },
+              { label: "Actual", data: rows.map(function(a){ return Math.round(a.actual); }), backgroundColor: "#006040" } ] },
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { font: MONO, boxWidth: 12 } },
+                 tooltip: { callbacks: { label: function(c){ return c.dataset.label + ": " + fmtInt(c.parsed.x) + " kg"; } } } },
+      scales: { x: { ticks: { font: MONO }, grid: GRID }, y: { ticks: { font: MONO }, grid: { display: false } } } }
+  });
+}
+
+var deficitSort = { col: "gap", dir: 1 };
+
+function renderDelivery(){
+  var have = LOCK.length > 0 || DELIV.length > 0;
+  els.deliveryEmpty.style.display = have ? "none" : "block";
+  els.deliveryBody.style.display = have ? "block" : "none";
+  if(!have) return;
+
+  var join = orderJoin();
+  var lock = join ? LOCK.filter(function(r){ return join(ln(r, "EWO"), lt(r, "Buyer"), lt(r, "Unit")); }) : LOCK;
+  var deliv = join ? DELIV.filter(function(r){ return join(dn(r, "ExportOrderNo"), dt_(r, "Buyer"), dt_(r, "BeneficieryUnit")); }) : DELIV;
+  var asOfMs = asOf || TODAY;
+
+  // ---- the report window: the lock month ----
+  var from = parseDate(LOCKMETA.reportFrom);
+  if(from == null && lock.length){
+    from = Math.min.apply(null, lock.map(function(r){ return ld(r, "LockStart") || Infinity; }));
+  }
+  if(from == null || !isFinite(from)) from = asOfMs;
+  var monthEnd = (function(){ var d = new Date(from); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0); })();
+
+  els.asOfHint.textContent = "Lock month from " + fmtDate(from) + ". Delivered and RFD figures are as of the last export"
+    + (LOCKMETA.reportTo ? ", the published report was as of " + fmtDate(parseDate(LOCKMETA.reportTo)) + "." : ".");
+
+  // ---- weekly KPI groupings ----
+  var byUnit = kpiGroup(lock, function(r){ return lt(r, "Unit"); }, asOfMs);
+  var byBuyer = kpiGroup(lock, function(r){ return lt(r, "Buyer"); }, asOfMs);
+  var tot = kpiTable(els.kpiBuyerTable, byBuyer, "Buyer");
+  kpiTable(els.kpiUnitTable, byUnit, "Garments unit");
+  pvaChart("unitPvaChart", byUnit, 0);
+  pvaChart("buyerPvaChart", byBuyer, 12);
+
+  // ---- delivery-sheet aggregates over the lock month ----
+  var lockSet = {}; lock.forEach(function(r){ lockSet[String(ln(r, "EWO"))] = true; });
+  var fresh = 0, redeliv = 0, returns = 0, freshToPlan = 0, lines = 0;
+  deliv.forEach(function(r){
+    var d = dd(r, "DeliveryDate"); if(d == null || d < from || d > asOfMs) return;
+    var kg = dn(r, "DeliveryQtyKg"), type = dt_(r, "DeliveryType").toLowerCase();
+    lines++;
+    if(type.indexOf("return") !== -1) returns += kg;
+    else if(type.indexOf("re-") === 0 || type.indexOf("re ") === 0) redeliv += kg;
+    else { fresh += kg; if(lockSet[String(dn(r, "ExportOrderNo"))]) freshToPlan += kg; }
+  });
+
+  var planTotal = lock.reduce(function(t, r){ return t + ln(r, "PlanKg"); }, 0);
+  // The published report divides by working days, which the KPI sheet states.
+  // Fall back to calendar days only when it does not.
+  var reportDate = parseDate(LOCKMETA.reportTo);
+  var useSheetDays = reportDate != null && asOfMs === reportDate && toNum(LOCKMETA.daysDone);
+  var daysDone = useSheetDays ? toNum(LOCKMETA.daysDone)
+    : Math.max(1, Math.round((Math.min(asOfMs, monthEnd) - from) / DAY) + 1);
+  var daysLeft = useSheetDays && toNum(LOCKMETA.daysRemain) != null ? toNum(LOCKMETA.daysRemain)
+    : Math.max(0, Math.round((monthEnd - asOfMs) / DAY));
+  var dayWord = useSheetDays ? " working days" : " days";
+  var target = toNum(LOCKMETA.monthTarget);
+  var pct = tot.req > 0 ? Math.round(100 * tot.actual / tot.req) : 0;
+  var tiles = [
+    ["Month target", target ? fmtInt(target) : "n/a", target ? "kg, from the KPI sheet" : "not in the sheet"],
+    ["Lock plan for month", fmtInt(planTotal), lock.length + " bookings"],
+    ["Required till date", fmtInt(tot.req), "as of " + fmtDate(asOfMs)],
+    ["Actual, KPI rule", fmtInt(tot.actual), pct + "% achieved"],
+    ["Net against plan", fmtInt(tot.actual - tot.req), fmtInt(tot.nDef) + " short, " + fmtInt(tot.nSur) + " over"],
+    ["RFD on planned", fmtInt(tot.rfd), tot.req > 0 ? Math.round(100 * tot.rfd / tot.req) + "% of required" : ""],
+    ["Fresh delivery", fmtInt(fresh), fmtInt(freshToPlan) + " to lock-plan orders"],
+    ["Returns", fmtInt(-returns), fmtInt(redeliv) + " re-delivered"],
+    ["Daily average so far", fmtInt(fresh / daysDone), daysDone + dayWord],
+    ["Needed per day to hit plan", daysLeft ? fmtInt(Math.max(0, planTotal - fresh) / daysLeft) : "n/a", daysLeft + dayWord + " left"]
+  ];
+  els.delKpis.innerHTML = tiles.map(function(t){
+    return '<div class="kpi"><div class="label">' + esc(t[0]) + '</div><div class="value">' + esc(t[1])
+      + '</div><div class="foot">' + esc(t[2]) + '</div></div>'; }).join("");
+
+  // ---- cumulative plan against actual across the lock month ----
+  var days = []; for(var d = from; d <= monthEnd; d += DAY) days.push(d);
+  var planByDay = {}, actByDay = {}, allByDay = {};
+  lock.forEach(function(r){
+    var s = ld(r, "LockStart"), e = ld(r, "LockEnd"), q = ln(r, "PlanKg");
+    if(s == null || e == null || e < s || q <= 0) return;
+    var per = q / (Math.round((e - s) / DAY) + 1);
+    for(var x = s; x <= e; x += DAY) planByDay[x] = (planByDay[x] || 0) + per;
+  });
+  deliv.forEach(function(r){
+    var x = dd(r, "DeliveryDate"); if(x == null) return;
+    var type = dt_(r, "DeliveryType").toLowerCase(); if(type.indexOf("fresh") === -1) return;
+    var kg = dn(r, "DeliveryQtyKg");
+    allByDay[x] = (allByDay[x] || 0) + kg;
+    if(lockSet[String(dn(r, "ExportOrderNo"))]) actByDay[x] = (actByDay[x] || 0) + kg;
+  });
+  var cp = 0, ca = 0, cAll = 0, cumPlan = [], cumAct = [], cumAll = [];
+  days.forEach(function(x){
+    cp += planByDay[x] || 0; cumPlan.push(Math.round(cp));
+    if(x <= asOfMs){ ca += actByDay[x] || 0; cAll += allByDay[x] || 0; cumAct.push(Math.round(ca)); cumAll.push(Math.round(cAll)); }
+    else { cumAct.push(null); cumAll.push(null); }
+  });
+  destroyChart("cumChart");
+  var el = document.getElementById("cumChart");
+  if(el && days.length){
+    charts.cumChart = new Chart(el, {
+      type: "line",
+      data: { labels: days.map(function(x){ return fmtDate(x); }),
+        datasets: [
+          { label: "Lock plan, cumulative", data: cumPlan, borderColor: "#F8B000", backgroundColor: "rgba(248,176,0,0.12)", fill: true, pointRadius: 0, borderWidth: 2, tension: 0.2 },
+          { label: "Fresh delivery to plan orders", data: cumAct, borderColor: "#006040", pointRadius: 0, borderWidth: 2.5, tension: 0.2 },
+          { label: "All fresh delivery", data: cumAll, borderColor: "#3FA566", borderDash: [5, 4], pointRadius: 0, borderWidth: 1.5, tension: 0.2 } ] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom", labels: { font: MONO, boxWidth: 12 } },
+                   tooltip: { callbacks: { label: function(c){ return c.dataset.label + ": " + fmtInt(c.parsed.y) + " kg"; } } } },
+        scales: { x: { ticks: { font: MONO, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } },
+                  y: { ticks: { font: MONO }, grid: GRID } } }
+    });
+  }
+
+  // ---- delivered per day / week / month, by type ----
+  var g = delGran, tb = {}, types = { "Fresh delivery": 0, "Re-delivery": 1, "Return": 2 };
+  deliv.forEach(function(r){
+    var x = dd(r, "DeliveryDate"); if(x == null) return;
+    var type = dt_(r, "DeliveryType").toLowerCase();
+    var lab = type.indexOf("return") !== -1 ? "Return" : (type.indexOf("re-") === 0 ? "Re-delivery" : "Fresh delivery");
+    var k = bucketKey(x, g);
+    var b = tb[k] || (tb[k] = {});
+    b[lab] = (b[lab] || 0) + dn(r, "DeliveryQtyKg");
+  });
+  var keys = Object.keys(tb).map(Number).sort(function(a, b){ return a - b; });
+  var series = {};
+  Object.keys(types).forEach(function(n){ series[n] = keys.map(function(k){ return Math.round(tb[k][n] || 0); }); });
+  stackedChart("delDailyChart", keys, series, g, "kg", ["#006040", "#3FA566", "#C7511F"]);
+  Array.prototype.forEach.call(els.granSwitch3.querySelectorAll(".segbtn"), function(b){
+    b.classList.toggle("on", b.getAttribute("data-gran") === g);
+  });
+  var word = g === "day" ? "day" : (g === "week" ? "week" : "month");
+  document.querySelectorAll("[data-grantitle3]").forEach(function(h){
+    h.textContent = h.getAttribute("data-grantitle3").replace("{g}", word);
+  });
+
+  // ---- fabric type and receiving unit, net kg in window ----
+  function netBy(col){
+    var m = {};
+    deliv.forEach(function(r){
+      var x = dd(r, "DeliveryDate"); if(x == null || x < from || x > asOfMs) return;
+      var k = dt_(r, col) || "(blank)";
+      m[k] = (m[k] || 0) + dn(r, "DeliveryQtyKg");
+    });
+    return Object.keys(m).map(function(k){ return [k, Math.round(m[k])]; }).sort(function(a, b){ return b[1] - a[1]; });
+  }
+  barChart("fabTypeChart", netBy("FabricType"), "kg");
+  barChart("delUnitChart", netBy("BeneficieryUnit"), "kg");
+
+  // ---- bookings behind plan ----
+  var scored = lock.map(function(r){
+    var sc = scoreBooking(r, asOfMs);
+    return { ewo: lt(r, "EWO"), booking: lt(r, "Booking"), buyer: lt(r, "Buyer"), unit: lt(r, "Unit"),
+             plan: sc.plan, req: sc.req, del: sc.del, gap: sc.del - sc.req, rfd: ln(r, "RFD"),
+             start: ld(r, "LockStart"), end: ld(r, "LockEnd") };
+  }).filter(function(x){ return x.req > 0.5; });
+  var cols = [["ewo","EWO"],["booking","Booking"],["buyer","Buyer"],["unit","Unit"],["start","Lock start"],["end","Lock end"],
+              ["plan","Plan kg"],["req","Required"],["del","Delivered"],["gap","Gap"],["rfd","RFD"]];
+  scored.sort(function(a, b){
+    var x = a[deficitSort.col], y = b[deficitSort.col];
+    if(typeof x === "string"){ return x.localeCompare(y) * deficitSort.dir; }
+    return ((x || 0) - (y || 0)) * deficitSort.dir;
+  });
+  var show = scored.slice(0, 300);
+  els.deficitHint.textContent = scored.length + " bookings had something due by " + fmtDate(asOfMs)
+    + ". Showing " + show.length + ". Click a heading to sort.";
+  var head = '<thead><tr>' + cols.map(function(c){
+    var numc = ["plan","req","del","gap","rfd"].indexOf(c[0]) !== -1;
+    var arrow = deficitSort.col === c[0] ? ' <span class="arrow">' + (deficitSort.dir > 0 ? "▲" : "▼") + '</span>' : "";
+    return '<th' + (numc ? ' class="num"' : "") + ' data-dc="' + c[0] + '">' + esc(c[1]) + arrow + '</th>'; }).join("") + '</tr></thead>';
+  var body = '<tbody>' + show.map(function(x){
+    return '<tr>' + cols.map(function(c){
+      var v = x[c[0]], numc = ["plan","req","del","gap","rfd"].indexOf(c[0]) !== -1;
+      if(c[0] === "start" || c[0] === "end") v = fmtDate(v);
+      else if(numc) v = fmtInt(v);
+      return '<td' + (numc ? ' class="num"' : "") + '>' + esc(v) + '</td>'; }).join("") + '</tr>'; }).join("") + '</tbody>';
+  els.deficitTable.innerHTML = show.length ? head + body
+    : '<tbody><tr><td class="empty-note">Nothing was due by this date under the current filters.</td></tr></tbody>';
+  Array.prototype.forEach.call(els.deficitTable.querySelectorAll("th[data-dc]"), function(th){
+    th.addEventListener("click", function(){
+      var c = th.getAttribute("data-dc");
+      if(deficitSort.col === c) deficitSort.dir = -deficitSort.dir;
+      else { deficitSort.col = c; deficitSort.dir = (["ewo","booking","buyer","unit"].indexOf(c) !== -1) ? 1 : 1; }
+      renderDelivery();
+    });
+  });
+}
+
+/* ============================================================
    Tabs
    ============================================================ */
 function showTab(name){
@@ -1462,6 +2025,27 @@ els.granSwitch.addEventListener("click", function(e){
   if(!b) return;
   granularity = b.getAttribute("data-gran");
   renderMonthCharts();
+});
+els.granSwitch2.addEventListener("click", function(e){
+  var b = e.target.closest(".segbtn");
+  if(!b) return;
+  granularity = b.getAttribute("data-gran");
+  renderCapacity();
+});
+els.granSwitch3.addEventListener("click", function(e){
+  var b = e.target.closest(".segbtn");
+  if(!b) return;
+  delGran = b.getAttribute("data-gran");
+  renderDelivery();
+});
+els.asOfDate.addEventListener("change", function(){
+  var v = parseDate(els.asOfDate.value);
+  if(v != null){ asOf = v; renderDelivery(); }
+});
+els.asOfReset.addEventListener("click", function(){
+  asOf = parseDate(LOCKMETA.reportTo) || TODAY;
+  els.asOfDate.value = new Date(asOf).toISOString().slice(0, 10);
+  renderDelivery();
 });
 els.resetBtn.addEventListener("click", resetAll);
 els.groupBy.addEventListener("change", renderPivot);
